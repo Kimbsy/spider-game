@@ -1,0 +1,153 @@
+name: Build Windows installer (jpackage)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows-installer:
+    runs-on: windows-latest
+    env:
+      JAR_NAME: spider-game-0.1.0-standalone.jar
+      JAR_DIR: target/uberjar
+      OUT_DIR: dist
+      APP_NAME: SpiderGame
+      APP_VERSION: 0.1.1
+      ICON_PATH: installer/app-icon.ico  # optional - put an .ico file at this path or remove the flag
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java (Zulu with jpackage)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'    # zulu is commonly used with jpackage on Actions runners
+          java-version: '17'     # choose 17/21 etc. (match what you want to ship)
+
+      - name: Install WiX Toolset (required by jpackage to make exe/msi)
+        run: |
+          choco install wixtoolset -y
+          refreshenv
+
+      - name: Install Leiningen (download lein.bat and self-install)
+        shell: pwsh
+        run: |
+          New-Item -Path C:\tools -ItemType Directory -Force | Out-Null
+
+          # Download official lein.bat
+          $leinUrl = 'https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein.bat'
+          Invoke-WebRequest -Uri $leinUrl -OutFile 'C:\tools\lein.bat' -UseBasicParsing
+
+          # Add C:\tools to PATH for remaining steps
+          Add-Content -Path $env:GITHUB_PATH -Value 'C:\tools'
+
+          # Ensure Java is available before self-install (wait a bit)
+          Write-Host "Java at: $($env:JAVA_HOME)"
+          & 'C:\tools\lein.bat' self-install || Write-Host "First self-install attempt returned non-zero, will retry..."
+
+          # Retry loop to ensure the self-install jar appears
+          $maxAttempts = 6
+          $attempt = 0
+          $found = $false
+          while ($attempt -lt $maxAttempts -and -not $found) {
+          Start-Sleep -Seconds 3
+          $attempt++
+          $jars = Get-ChildItem -Path "$env:USERPROFILE\.lein\self-installs" -Filter 'leiningen*.jar' -ErrorAction SilentlyContinue
+          if ($jars -and $jars.Count -gt 0) {
+          $found = $true
+          Write-Host "Leiningen self-install jar found: $($jars[0].FullName)"
+          } else {
+          # Use ${attempt} to avoid parser confusion with the colon after the variable
+          Write-Host "Attempt ${attempt}: leiningen jar not found yet — running self-install again..."
+          & 'C:\tools\lein.bat' self-install
+          }
+          }
+
+          if (-not $found) {
+          Write-Error "Leiningen self-install failed: no leiningen-*.jar in $env:USERPROFILE\.lein\self-installs"
+          Exit 1
+          }
+
+          # sanity check
+          & 'C:\tools\lein.bat' --version
+
+      - name: Build uberjar
+        env:
+          LEIN_SNAPSHOTS_IN_RELEASE: true
+        shell: pwsh
+        run: |
+          # Use the absolute path so we don't rely on PATH resolution timing
+          & 'C:\tools\lein.bat' uberjar
+          dir target\uberjar
+
+
+      - name: Show manifest (sanity check)
+        shell: pwsh
+        run: |
+          $jar = Join-Path $env:JAR_DIR $env:JAR_NAME
+          Write-Host "JAR path: $jar"
+          if (-not (Test-Path $jar)) {
+          Write-Error "Jar not found: $jar"
+          exit 1
+          }
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($jar)
+          try {
+          $entry = $zip.Entries | Where-Object { $_.FullName -ieq "META-INF/MANIFEST.MF" }
+          if ($null -eq $entry) {
+          Write-Error "Manifest (META-INF/MANIFEST.MF) not found in jar."
+          exit 1
+          }
+          $sr = $entry.Open()
+          $reader = New-Object System.IO.StreamReader($sr)
+          $manifest = $reader.ReadToEnd()
+          $reader.Close(); $sr.Close()
+          Write-Host "---- MANIFEST ----"
+          Write-Host $manifest
+          Write-Host "---- END MANIFEST ----"
+          } finally {
+          $zip.Dispose()
+          }
+
+      - name: Create dist dir
+        shell: pwsh
+        run: |
+          if (-not (Test-Path $env:OUT_DIR)) {
+          New-Item -ItemType Directory -Path $env:OUT_DIR | Out-Null
+          Write-Host "Created $env:OUT_DIR"
+          } else {
+          Write-Host "$env:OUT_DIR already exists"
+          }
+
+
+      - name: Run jpackage to create Windows installer (bundles runtime)
+        shell: pwsh
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+        run: |
+            $jpackage = Join-Path $env:JAVA_HOME "bin\jpackage.exe"
+            & $jpackage `
+            --input "$env:JAR_DIR" `
+            --dest "$env:OUT_DIR" `
+            --name "$env:APP_NAME" `
+            --main-jar "$env:JAR_NAME" `
+            --main-class "spider_game.core" `
+            --app-version "$env:APP_VERSION" `
+            --win-per-user-install `
+            --win-shortcut `
+            --type exe `
+            --verbose `
+            --copyright "Your Name or Company"
+            Write-Host "jpackage finished; produced files:"
+            Get-ChildItem $env:OUT_DIR
+
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist\*
