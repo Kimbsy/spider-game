@@ -4,7 +4,8 @@
             [clunk.sprite :as sprite]
             [clunk.tween :as tween]
             [clunk.util :as u]
-            [spider-game.sprites.player-spider :as ps]))
+            [spider-game.sprites.player-spider :as ps]
+            [spider-game.sprites.web :as web]))
 
 (defn f [c] (mapv #(float (/  % 255)) c))
 
@@ -15,7 +16,8 @@
 (defn sprites
   "The initial list of sprites for this scene"
   [{:keys [window] :as state}]
-  [(ps/spider (u/center window))])
+  [(web/web window)
+   (ps/spider (u/center window))])
 
 (defn draw-level-01!
   "Called each frame, draws the current scene to the screen"

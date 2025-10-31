@@ -13,7 +13,7 @@
 ;; Configure the game
 (def spider-game-game
   (c/game {:title "spider-game"
-           :size [800 600]
+           :size [1000 800]
            :init-scenes-fn init-scenes
            :current-scene :level-01
            :assets {:audio {:step-1 "resources/audio/step-1.ogg"

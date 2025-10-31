@@ -4,12 +4,13 @@
             [clunk.shape :as shape]
             [clunk.sprite :as sprite]
             [clunk.tween :as tween]
-            [clunk.util :as u]))
+            [clunk.util :as u]
+            [spider-game.common :as common]))
 
-(def leg-color (p/hex->rgba "#F2F5EA"))
-(def foot-color (p/hex->rgba "#F2F5EA"))
-(def body-color (p/hex->rgba "#F2F5EA"))
-(def eye-color (p/hex->rgba "#2C363F"))
+(def leg-color common/spider-white)
+(def foot-color common/spider-white)
+(def body-color common/spider-white)
+(def eye-color common/spider-black)
 
 (def min-length 50)
 (def max-length 160)
@@ -225,7 +226,6 @@
   [spider [x y :as pos]]
   (let [distance (u/magnitude (map - pos (:pos spider)))
         step-count (max 10 (int (* 100 (/ distance spider-speed))))]
-    (prn step-count)
     (-> spider
         (assoc :status :moving)
         (update :tweens (fn [tweens]
