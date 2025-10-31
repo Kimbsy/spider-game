@@ -13,7 +13,7 @@ jobs:
       JAR_DIR: target/uberjar
       OUT_DIR: dist
       APP_NAME: SpiderGame
-      APP_VERSION: 0.1.1
+      APP_VERSION: 0.1.2
       ICON_PATH: installer/app-icon.ico  # optional - put an .ico file at this path or remove the flag
 
     steps:

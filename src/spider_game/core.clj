@@ -14,7 +14,11 @@
            :size [800 600]
            :init-scenes-fn init-scenes
            :current-scene :level-01
-           :assets {}}))
+           :assets {:audio {:step-1 "resources/audio/step-1.ogg"
+                            :step-2 "resources/audio/step-2.ogg"
+                            :step-3 "resources/audio/step-3.ogg"
+                            :step-4 "resources/audio/step-4.ogg"
+                            :step-5 "resources/audio/step-5.ogg"}}}))
 
 (defn -main
   "Run the game"
