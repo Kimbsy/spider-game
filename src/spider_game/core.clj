@@ -1,12 +1,14 @@
 (ns spider-game.core
   (:gen-class)
   (:require [clunk.core :as c]
-            [spider-game.scenes.level-01 :as level-01]))
+            [spider-game.scenes.level-01 :as level-01]
+            [spider-game.scenes.menu :as menu]))
 
 (defn init-scenes
   "Map of scenes in the game"
   [state]
-  {:level-01 (level-01/init state)})
+  {:level-01 (level-01/init state)
+   :menu (menu/init state)})
 
 ;; Configure the game
 (def spider-game-game
