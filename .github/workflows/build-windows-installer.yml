@@ -139,6 +139,7 @@ jobs:
             --app-version "$env:APP_VERSION" `
             --win-per-user-install `
             --win-shortcut `
+            --win-upgrade-uuid "3a190c22-cc4e-41e5-aefb-9b4d7563ba34" `
             --type exe `
             --verbose `
             --copyright "Your Name or Company"
