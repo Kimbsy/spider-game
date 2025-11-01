@@ -1,23 +1,13 @@
 (ns spider-game.scenes.bite-overlay
-  (:require [clunk.sprite :as sprite]
-            [clunk.text :as text]
-            [clunk.shape :as shape]
-            [spider-game.common :as common]
+  (:require [clunk.collision :as collision]
             [clunk.core :as c]
-            [spider-game.scenes.level-01 :as level-01]
+            [clunk.input :as i]
             [clunk.palette :as p]
+            [clunk.sprite :as sprite]
+            [clunk.tween :as tween]
             [clunk.util :as u]
-            [clunk.tween :as tween]))
-
-#_(let [[w h] (u/window-size window)
-      h-pad 100
-      height 200]
-  (shape/fill-rect! state
-                    [h-pad
-                     (- (/ h 2) (/ height 2))]
-                    [(- w (* h-pad 2))
-                     height]
-                    p/grey))
+            [spider-game.common :as common]
+            [spider-game.scenes.level-01 :as level-01]))
 
 (defn sprites
   [{:keys [window] :as state}]
@@ -53,7 +43,7 @@
            th 30
            gw (/ tw 5)
            gh (* th 1.3)
-           gx (- (+ cx (rand-int (- tw gw))) (/ tw 2))
+           gx (- (+ cx (rand-int (- tw gw))) (/ (- tw gw) 2))
            pw (/ gw 3)
            ph (* gh 1.3)]
        (concat
@@ -96,13 +86,15 @@
                                        :color p/red
                                        :fill? true)
                (tween/add-tween
-                (tween/tween
-                 :pos
-                 tw
-                 :update-fn tween/tween-x-fn
-                 :yoyo? true
-                 :yoyo-update-fn tween/tween-x-yoyo-fn
-                 :repeat-times ##Inf)))]))))))
+                (assoc
+                 (tween/tween
+                  :pos
+                  tw
+                  :update-fn tween/tween-x-fn
+                  :yoyo? true
+                  :yoyo-update-fn tween/tween-x-yoyo-fn
+                  :repeat-times ##Inf)
+                 :tag :movement)))]))))))
 
 (defn draw-level-01!
   [state]
@@ -128,10 +120,46 @@
   (-> state
       tween/update-state))
 
-;; @looks like this scene will process the event that took us here too!?
 (defn attempt-bite
-  [state e]
-  state)
+  [{:keys [current-scene] :as state} e]
+  (if (i/is e :key i/K_SPACE)
+    (let [sprites (get-in state [:scenes current-scene :sprites])
+          cb (first (filter (sprite/has-group :current-bite) sprites))
+          g (first (filter (sprite/has-group :good) sprites))
+          p (first (filter (sprite/has-group :perfect) sprites))]
+      (cond
+        (collision/w-h-rects-collide? cb p)
+        state
+
+        (collision/w-h-rects-collide? cb g)
+        state
+
+        ;; else 
+        :else
+        (do
+          (sprite/update-sprites
+           state
+           (sprite/has-group :current-bite)
+           (fn [s]
+             (let [timeout 40]
+               (-> s
+                   (update :tweens
+                           (fn [ts]
+                             (map (fn [t]
+                                    (if (= :movement (:tag t))
+                                      (assoc t :delay timeout)
+                                      t))
+                                  ts)))
+                   (tween/add-tween
+                    (tween/tween
+                     :pos
+                     20
+                     :step-count 4
+                     :update-fn tween/tween-y-fn
+                     :yoyo? true
+                     :yoyo-update-fn tween/tween-y-yoyo-fn
+                     :repeat-times 5)))))))))
+    state))
 
 (defn init
   "Initialise this scene"
