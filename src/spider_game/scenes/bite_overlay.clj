@@ -7,7 +7,7 @@
             [clunk.tween :as tween]
             [clunk.util :as u]
             [spider-game.common :as common]
-            [spider-game.scenes.level-01 :as level-01]))
+            [clunk.scene :as scene]))
 
 (defn sprites
   [{:keys [window] :as state}]
@@ -110,7 +110,7 @@
 (defn draw-bite-overlay!
   [{:keys [window] :as state}]
   ;; draw level-01 scene
-  (c/draw-background! level-01/dark-green)
+  (c/draw-background! common/dark-green)
   (draw-level-01! state)
 
   (sprite/draw-scene-sprites! state))
@@ -129,10 +129,12 @@
           p (first (filter (sprite/has-group :perfect) sprites))]
       (cond
         (collision/w-h-rects-collide? cb p)
-        state
+        (do (prn "PERFECT")
+            (scene/transition state :level-01))
 
         (collision/w-h-rects-collide? cb g)
-        state
+        (do (prn "GOOD")
+            (scene/transition state :level-01))
 
         ;; else 
         :else

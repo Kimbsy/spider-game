@@ -9,13 +9,9 @@
             [spider-game.sprites.web :as web]
             [spider-game.sprites.fly :as fly]
             [clunk.audio :as audio]
-            [clunk.scene :as scene]))
-
-(defn f [c] (mapv #(float (/  % 255)) c))
-
-(def light-green [0.52 1.0 0.78 1.0])
-(def dark-green [0.16 0.45 0.45 1.0])
-(defn rand-color [] [(rand-int 255) (rand-int 255) (rand-int 255) 1])
+            [clunk.scene :as scene]
+            [spider-game.common :as common]
+            [spider-game.scenes.bite-overlay :as bite-overlay]))
 
 (defn flies
   [n window]
@@ -32,7 +28,7 @@
 (defn draw-level-01!
   "Called each frame, draws the current scene to the screen"
   [state]
-  (c/draw-background! dark-green)
+  (c/draw-background! common/dark-green)
   (sprite/draw-scene-sprites! state))
 
 (defn remove-dead
@@ -81,7 +77,15 @@
 (defn bite
   [{:keys [current-scene] :as state} e]
   (if (i/is e :key i/K_SPACE)
-    (scene/transition state :bite-overlay)
+    (scene/transition
+     state
+     :bite-overlay
+     :transition-length 0
+     ;; ensure the goal is in a new random position
+     :init-fn (fn [state]
+                (assoc-in state
+                          [:scenes :bite-overlay]
+                          (bite-overlay/init state))))
     #_(let [s (first (filter (sprite/has-group :player-spider)
                            (get-in state [:scenes current-scene :sprites])))]
       (update-in state
