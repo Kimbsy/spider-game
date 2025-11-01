@@ -8,7 +8,8 @@
             [spider-game.sprites.player-spider :as ps]
             [spider-game.sprites.web :as web]
             [spider-game.sprites.fly :as fly]
-            [clunk.audio :as audio]))
+            [clunk.audio :as audio]
+            [clunk.scene :as scene]))
 
 (defn f [c] (mapv #(float (/  % 255)) c))
 
@@ -80,7 +81,8 @@
 (defn bite
   [{:keys [current-scene] :as state} e]
   (if (i/is e :key i/K_SPACE)
-    (let [s (first (filter (sprite/has-group :player-spider)
+    (scene/transition state :bite-overlay)
+    #_(let [s (first (filter (sprite/has-group :player-spider)
                            (get-in state [:scenes current-scene :sprites])))]
       (update-in state
                  [:scenes current-scene :sprites]
