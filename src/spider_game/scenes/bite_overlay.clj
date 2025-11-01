@@ -19,7 +19,9 @@
         bgw (- w (* hw-pad 2))
         bgh c-h
         fgw (- bgw c-pad)
-        fgh (- bgh c-pad)]
+        fgh (- bgh c-pad)
+        iw (- fgw c-pad)
+        ih (- fgh c-pad)]
     (concat
      [(sprite/geometry-sprite :bg-container
                               center
@@ -38,6 +40,15 @@
                                [fgw 0]]
                               :size [fgw fgh]
                               :color common/spider-white
+                              :fill? true)
+      (sprite/geometry-sprite :inner
+                              center
+                              [[0 0]
+                               [0 ih]
+                               [iw ih]
+                               [iw 0]]
+                              :size [iw ih]
+                              :color p/grey
                               :fill? true)]
      (let [tw (- fgw 50)
            th 30
@@ -54,7 +65,7 @@
                                   [tw th]
                                   [tw 0]]
                                  :size [tw th]
-                                 :color p/grey
+                                 :color common/spider-white
                                  :fill? true)
          (sprite/geometry-sprite :good
                                  [gx cy]
@@ -166,7 +177,7 @@
 (defn init
   "Initialise this scene"
   [state]
-  {:sprites   (sprites state)
-   :draw-fn   draw-bite-overlay!
+  {:sprites (sprites state)
+   :draw-fn draw-bite-overlay!
    :update-fn update-bite-overlay
    :key-fns [attempt-bite]})

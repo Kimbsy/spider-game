@@ -76,16 +76,33 @@
 
 (defn bite
   [{:keys [current-scene] :as state} e]
-  (if (i/is e :key i/K_SPACE)
+  ;; @TODO: temp for ease of testing
+  (cond
+    (i/is e :key i/K_SPACE)
     (scene/transition
      state
      :bite-overlay
      :transition-length 0
+     ;; @TODO: insert the fly
      ;; ensure the goal is in a new random position
      :init-fn (fn [state]
                 (assoc-in state
                           [:scenes :bite-overlay]
                           (bite-overlay/init state))))
+
+    (i/is e :key i/K_W)
+    (scene/transition
+     state
+     :wrap-overlay
+     :transition-length 0
+     ;; @TODO: insert the fly
+     ;; :init-fn (fn [state]
+     ;;            (assoc-in state
+     ;;                      [:scenes :bite-overlay]
+     ;;                      (bite-overlay/init state)))
+     )
+
+    ;; @TODO: use this: we want to only bite or wrap when we're touching a fly, and we only want the data about a single fly we;re touching.
     #_(let [s (first (filter (sprite/has-group :player-spider)
                            (get-in state [:scenes current-scene :sprites])))]
       (update-in state
@@ -102,15 +119,16 @@
                               f))
                           sprites)
                      sprites))))
+
+    :else
     state))
 
 (defn init
   "Initialise this scene"
   [state]
-  {:sprites   (sprites state)
-   :draw-fn   draw-level-01!
+  {:sprites (sprites state)
+   :draw-fn draw-level-01!
    :update-fn update-level-01
    :colliders (colliders)
    :mouse-button-fns [clicked]
-   :key-fns [bite]
-   })
+   :key-fns [bite]})
