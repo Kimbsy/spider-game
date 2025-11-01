@@ -172,7 +172,6 @@
   [state
    {[x y :as pos] :pos
     :keys [feet]}]
-
   (let [lines (mapcat (fn [[i {[fx fy :as f-pos] :pos}]]
                         (leg-lines ls lt f-pos pos (< i 4)))
                       (zipmap (range) feet))]
@@ -202,6 +201,7 @@
            pos
            :update-fn update-spider
            :draw-fn draw-spider
+           :debug? true
            :extra {:initial-offsets initial-offsets
                    :feet (mapv (fn [offset]
                                  {:reset-offset offset

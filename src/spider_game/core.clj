@@ -21,7 +21,8 @@
                             :step-2 "resources/audio/step-2.ogg"
                             :step-3 "resources/audio/step-3.ogg"
                             :step-4 "resources/audio/step-4.ogg"
-                            :step-5 "resources/audio/step-5.ogg"}}}))
+                            :step-5 "resources/audio/step-5.ogg"
+                            :munch "resources/audio/munch.ogg"}}}))
 
 (defn -main
   "Run the game"
