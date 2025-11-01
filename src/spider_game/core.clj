@@ -16,7 +16,8 @@
            :size [1000 800]
            :init-scenes-fn init-scenes
            :current-scene :level-01
-           :assets {:audio {:step-1 "resources/audio/step-1.ogg"
+           :assets {:image {:fly-spritesheet "resources/img/fly.png"}
+                    :audio {:step-1 "resources/audio/step-1.ogg"
                             :step-2 "resources/audio/step-2.ogg"
                             :step-3 "resources/audio/step-3.ogg"
                             :step-4 "resources/audio/step-4.ogg"

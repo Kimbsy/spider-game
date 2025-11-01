@@ -81,7 +81,7 @@
                        i
                        (:pos foot)
                        (map + pos reset-offset))
-                      :initial-delay (* i 3)
+                      :delay (* i 3)
                       :tag :reset-feet))
                     (tween/add-tween
                      (assoc
@@ -89,7 +89,7 @@
                        i
                        (:pos foot)
                        (map + pos reset-offset))
-                      :initial-delay (* i 3)
+                      :delay (* i 3)
                       :tag :reset-feet))))
               spider
               (zipmap (range) feet))
