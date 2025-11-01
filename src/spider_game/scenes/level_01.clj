@@ -80,17 +80,22 @@
 (defn bite
   [{:keys [current-scene] :as state} e]
   (if (i/is e :key i/K_SPACE)
-    (do
-      (audio/play! :munch)
-      (let [s (first (filter (sprite/has-group :player-spider)
-                             (get-in state [:scenes current-scene :sprites])))]
-        (-> state
-            (sprite/update-sprites
-             (sprite/has-group :fly)
-             (fn [f]
-               (if (collision/w-h-rects-collide? f s)
-                 (assoc f :dead true)
-                 f))))))
+    (let [s (first (filter (sprite/has-group :player-spider)
+                           (get-in state [:scenes current-scene :sprites])))]
+      (update-in state
+                 [:scenes current-scene :sprites]
+                 (fn [sprites]
+                   (if-let [food (first
+                                  (filter #(and (= :fly (:sprite-group %1))
+                                                (collision/w-h-rects-collide? %1 s))
+                                          sprites))]
+                     (map (fn [f]
+                            (if (= (:uuid f) (:uuid food))
+                              (do (audio/play! :munch)
+                                  (assoc f :dead true))
+                              f))
+                          sprites)
+                     sprites))))
     state))
 
 (defn init
