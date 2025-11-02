@@ -9,8 +9,7 @@
             [clunk.scene :as scene]
             [spider-game.sprites.fly :as fly]
             [clunk.shape :as shape]
-            [clunk.collision :as collision])
-  )
+            [clunk.collision :as collision]))
 
 (def wraps-required 5)
 

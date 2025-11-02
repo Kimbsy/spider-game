@@ -9,10 +9,13 @@
        pos
        [64 96]
        :fly-spritesheet
-       [64 96]
+       [64 192]
        :animations {:none {:frames 1
                            :y-offset 0
-                           :frame-delay 100}}
+                           :frame-delay 100}
+                    :wrapped {:frames 1
+                              :y-offset 1
+                              :frame-delay 100}}
        :current-animation :none
        :rotation (rand-int 360))
       (tween/add-tween
