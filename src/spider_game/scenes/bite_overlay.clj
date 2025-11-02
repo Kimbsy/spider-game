@@ -151,11 +151,11 @@
       (cond
         (collision/w-h-rects-collide? cb p)
         (do (prn "PERFECT")
-            (scene/transition state :level-01))
+            (scene/transition state :wrap-overlay))
 
         (collision/w-h-rects-collide? cb g)
         (do (prn "GOOD")
-            (scene/transition state :level-01))
+            (scene/transition state :wrap-overlay))
 
         ;; else 
         :else
