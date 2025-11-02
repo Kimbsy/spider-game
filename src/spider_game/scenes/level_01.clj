@@ -55,7 +55,8 @@
 ;; @TODO: not working, could do with a "no collisions fn", otherwise we trigger non-hit for each fly that doesn't collide
 (defn colliders
   []
-  [(collision/collider
+  []
+  #_[(collision/collider
     :player-spider
     :fly
     (fn [spider _fly]
@@ -79,46 +80,26 @@
   ;; @TODO: temp for ease of testing
   (cond
     (i/is e :key i/K_SPACE)
-    (scene/transition
-     state
-     :bite-overlay
-     :transition-length 0
-     ;; @TODO: insert the fly
-     ;; ensure the goal is in a new random position
-     :init-fn (fn [state]
-                (assoc-in state
-                          [:scenes :bite-overlay]
-                          (bite-overlay/init state))))
-
-    (i/is e :key i/K_W)
-    (scene/transition
-     state
-     :wrap-overlay
-     :transition-length 0
-     ;; @TODO: insert the fly
-     ;; :init-fn (fn [state]
-     ;;            (assoc-in state
-     ;;                      [:scenes :bite-overlay]
-     ;;                      (bite-overlay/init state)))
-     )
-
-    ;; @TODO: use this: we want to only bite or wrap when we're touching a fly, and we only want the data about a single fly we;re touching.
-    #_(let [s (first (filter (sprite/has-group :player-spider)
-                           (get-in state [:scenes current-scene :sprites])))]
-      (update-in state
-                 [:scenes current-scene :sprites]
-                 (fn [sprites]
-                   (if-let [food (first
-                                  (filter #(and (= :fly (:sprite-group %1))
-                                                (collision/w-h-rects-collide? %1 s))
-                                          sprites))]
-                     (map (fn [f]
-                            (if (= (:uuid f) (:uuid food))
-                              (do (audio/play! :munch)
-                                  (assoc f :dead true))
-                              f))
-                          sprites)
-                     sprites))))
+    (let [sprites (get-in state [:scenes current-scene :sprites])
+          spider (first (filter (sprite/has-group :player-spider) sprites))
+          flies (filter (sprite/has-group :fly) sprites)
+          target-fly (first (filter #(and (= :none (:current-animation %1))
+                                          (collision/w-h-rects-collide? %1 spider))
+                                    flies))]
+      (if target-fly
+        (scene/transition
+         state
+         :bite-overlay
+         :transition-length 0
+         ;; ensure the goal is in a new random position
+         :init-fn (fn [state]
+                    (assoc-in state
+                              [:scenes :bite-overlay]
+                              ;; also insert he fly uuid so we know
+                              ;; which sprite to wrap once we're done
+                              (assoc (bite-overlay/init state)
+                                     :fly-uuid (:uuid target-fly)))))
+        state))
 
     :else
     state))

@@ -7,7 +7,8 @@
             [clunk.tween :as tween]
             [clunk.util :as u]
             [spider-game.common :as common]
-            [clunk.scene :as scene]))
+            [clunk.scene :as scene]
+            [spider-game.scenes.wrap-overlay :as wrap-overlay]))
 
 (defn sprites
   [{:keys [window] :as state}]
@@ -151,11 +152,29 @@
       (cond
         (collision/w-h-rects-collide? cb p)
         (do (prn "PERFECT")
-            (scene/transition state :wrap-overlay))
+            (-> state
+                ((fn [state]
+                   (assoc-in state
+                             [:scenes :wrap-overlay]
+                             ;; also insert he fly uuid so we know
+                             ;; which sprite to wrap once we're done
+                             (assoc (wrap-overlay/init state)
+                                    :fly-uuid (get-in state [:scenes current-scene :fly-uuid])))))
+                (scene/transition
+                 :wrap-overlay)))
 
         (collision/w-h-rects-collide? cb g)
         (do (prn "GOOD")
-            (scene/transition state :wrap-overlay))
+            (-> state
+                ((fn [state]
+                   (assoc-in state
+                             [:scenes :wrap-overlay]
+                             ;; also insert he fly uuid so we know
+                             ;; which sprite to wrap once we're done
+                             (assoc (wrap-overlay/init state)
+                                    :fly-uuid (get-in state [:scenes current-scene :fly-uuid])))))
+                (scene/transition
+                 :wrap-overlay)))
 
         ;; else 
         :else

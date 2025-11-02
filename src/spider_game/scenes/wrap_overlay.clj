@@ -107,6 +107,16 @@
       (collision/lines-intersect? line [c d])
       (collision/lines-intersect? line [d a])))
 
+(defn wrap-level-01-fly
+  [state uuid]
+  (update-in state [:scenes :level-01 :sprites]
+             (fn [sprites]
+               (pmap (fn [f]
+                       (if (= uuid (:uuid f))
+                         (sprite/set-animation f :wrapped)
+                        f))
+                     sprites))))
+
 (defn check-wrapped
   [{:keys [window current-scene] :as state}]
   (let [wrap-points (get-in state [:scenes current-scene :wrap-points])
@@ -118,6 +128,7 @@
     (if (<= wraps-required (count (filter (partial line-hits-rect? rect) lines)))
       (-> state
           (assoc-in [:scenes current-scene :status] :wrapped)
+          (wrap-level-01-fly (get-in state [:scenes current-scene :fly-uuid]))
           (scene/transition :level-01))
       state)))
 
