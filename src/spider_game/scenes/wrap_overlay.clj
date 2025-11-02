@@ -65,7 +65,7 @@
                               :size [iw ih]
                               :color p/grey
                               :fill? true)
-      (fly/fly center)])))
+      (fly/fly center :hide-timer? true)])))
 
 (defn draw-level-01!
   [state]

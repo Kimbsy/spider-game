@@ -1,17 +1,18 @@
 (ns spider-game.scenes.level-01
-  (:require [clunk.core :as c]
-            [clunk.collision :as collision]
+  (:require [clunk.collision :as collision]
+            [clunk.core :as c]
             [clunk.input :as i]
+            [clunk.scene :as scene]
             [clunk.sprite :as sprite]
             [clunk.tween :as tween]
             [clunk.util :as u]
+            [spider-game.common :as common]
+            [spider-game.scenes.bite-overlay :as bite-overlay]
+            [spider-game.sprites.fly :as fly]
             [spider-game.sprites.player-spider :as ps]
             [spider-game.sprites.web :as web]
-            [spider-game.sprites.fly :as fly]
-            [clunk.audio :as audio]
-            [clunk.scene :as scene]
-            [spider-game.common :as common]
-            [spider-game.scenes.bite-overlay :as bite-overlay]))
+            [clunk.shape :as shape]
+            [clunk.palette :as p]))
 
 (defn flies
   [n window]
@@ -65,15 +66,10 @@
 
 (defn clicked
   [state {:keys [pos] :as e}]
-  (cond
-    (i/is e :button i/M_RIGHT)
-    (sprite/update-sprites
-     state
-     (sprite/has-group :player-spider)
-     #(ps/move % pos))
-
-    :else
-    state))
+  (sprite/update-sprites
+   state
+   (sprite/has-group :player-spider)
+   #(ps/move % pos)))
 
 (defn bite
   [{:keys [current-scene] :as state} e]
@@ -83,7 +79,7 @@
     (let [sprites (get-in state [:scenes current-scene :sprites])
           spider (first (filter (sprite/has-group :player-spider) sprites))
           flies (filter (sprite/has-group :fly) sprites)
-          target-fly (first (filter #(and (= :none (:current-animation %1))
+          target-fly (first (filter #(and (= :escaping (:current-animation %1))
                                           (collision/w-h-rects-collide? %1 spider))
                                     flies))]
       (if target-fly
