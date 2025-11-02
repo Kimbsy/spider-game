@@ -13,6 +13,7 @@
   [{:keys [window] :as state}]
   (let [[w h] (u/window-size window)
         [cx cy :as center] (u/center window)
+        shadow-pad 15
         hw-pad 100
         c-pad 10
         c-h 200
@@ -23,7 +24,16 @@
         iw (- fgw c-pad)
         ih (- fgh c-pad)]
     (concat
-     [(sprite/geometry-sprite :bg-container
+     [(sprite/geometry-sprite :shadow
+                              [(+ cx shadow-pad) (+ cy shadow-pad)]
+                              [[0 0]
+                               [0 bgh]
+                               [bgw bgh]
+                               [bgw 0]]
+                              :size [bgw bgh]
+                              :color (assoc p/black 3 0.4)
+                              :fill? true)
+      (sprite/geometry-sprite :bg-container
                               center
                               [[0 0]
                                [0 bgh]
