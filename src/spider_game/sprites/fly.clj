@@ -52,8 +52,9 @@
        :rotation (rand-int 360)
        :draw-fn draw-fly!
        :update-fn update-fly!
-       :extra {:remaining 1
-               :hide-timer? hide-timer?})
+       :extra {:remaining (+ 0.5 (/ (rand) 2))
+               :hide-timer? hide-timer?
+               :status :escaping})
       (tween/add-tween
        (tween/tween
         :rotation

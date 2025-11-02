@@ -32,16 +32,40 @@
   (c/draw-background! common/dark-green)
   (sprite/draw-scene-sprites! state))
 
-(defn remove-dead
+(defn handle-escapes
+  [{:keys [current-scene] :as state}]
+  (let [flies (filter (sprite/has-group :fly)
+                      (get-in state [:scenes current-scene :sprites]))]
+    (reduce (fn [acc-state f]
+              (if (and (not (pos? (:remaining f)))
+                       (not= :escaped (:status f)))
+                (-> acc-state
+                    (sprite/update-sprites
+                     (sprite/is-sprite f)
+                     #(assoc % :status :escaped))
+                    (sprite/update-sprites
+                     (sprite/has-group :web)
+                     (fn [w]
+                       (web/break-web-at acc-state w (:pos f)))))
+                acc-state))
+            state
+            flies)))
+
+(defn remove-escaped
   [{:keys [current-scene] :as state}]
   (update-in state [:scenes current-scene :sprites]
-             #(remove :dead %)))
+             (fn [sprites]
+               (remove (fn [s]
+                         (and ((sprite/has-group :fly) s)
+                              (= :escaped (:status s))))
+                       sprites))))
 
 (defn update-level-01
   "Called each frame, update the sprites in the current scene"
   [state]
   (-> state
-      remove-dead
+      handle-escapes
+      remove-escaped
       sprite/update-state
       tween/update-state
       ((fn [state]
@@ -64,8 +88,19 @@
       (assoc spider :debug? true))
     collision/identity-collide-fn)])
 
-(defn clicked
+;; @TODO: helpful debugging
+(defn break-web-on-click
   [state {:keys [pos] :as e}]
+  (if (i/is e i/M_LEFT)
+    (sprite/update-sprites
+     state
+     (sprite/has-group :web)
+     (fn [w]
+       (web/break-web-at state w pos)))
+    state))
+
+(defn clicked
+  [state {:keys [pos] :as e}]  
   (sprite/update-sprites
    state
    (sprite/has-group :player-spider)
