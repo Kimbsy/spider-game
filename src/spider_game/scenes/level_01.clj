@@ -88,7 +88,7 @@
       (assoc spider :debug? true))
     collision/identity-collide-fn)])
 
-;; @TODO: helpful debugging
+;; @NOTE: helpful debugging function
 (defn break-web-on-click
   [state {:keys [pos] :as e}]
   (if (i/is e i/M_LEFT)
@@ -99,14 +99,27 @@
        (web/break-web-at state w pos)))
     state))
 
-(defn clicked
-  [state {:keys [pos] :as e}]  
-  (sprite/update-sprites
-   state
-   (sprite/has-group :player-spider)
-   #(ps/move % pos)))
+;; @NOTE: helpful debugging function
+(defn fix-web-on-click
+  [state {:keys [pos] :as e}]
+  (if (i/is e i/M_LEFT)
+    (sprite/update-sprites
+     state
+     (sprite/has-group :web)
+     (fn [w]
+       (web/fix-web-at state w pos)))
+    state))
 
-(defn bite
+(defn move-spider-on-click
+  [state {:keys [pos] :as e}]
+  (if (i/is e :action i/PRESS)
+    (sprite/update-sprites
+     state
+     (sprite/has-group :player-spider)
+     #(ps/move % pos))
+    state))
+
+(defn bite-on-space
   [{:keys [current-scene] :as state} e]
   ;; @TODO: temp for ease of testing
   (cond
@@ -135,6 +148,19 @@
     :else
     state))
 
+;; @TODO: need to animate repair, need to use up some kind of resources, need to indicatew that spider is in range of repair
+(defn repair-web-on-r
+  [{:keys [current-scene] :as state} {:keys [pos] :as e}]
+  (if (i/is e i/M_LEFT)
+    (let [sprites (get-in state [:scenes current-scene :sprites])
+          spider (first (filter (sprite/has-group :player-spider) sprites))]
+      (sprite/update-sprites
+       state
+       (sprite/has-group :web)
+       (fn [w]
+         (web/fix-web-at state w (:pos spider)))))
+    state))
+
 (defn init
   "Initialise this scene"
   [state]
@@ -142,5 +168,6 @@
    :draw-fn draw-level-01!
    :update-fn update-level-01
    :colliders (colliders)
-   :mouse-button-fns [clicked]
-   :key-fns [bite]})
+   :mouse-button-fns [move-spider-on-click]
+   :key-fns [bite-on-space
+             repair-web-on-r]})
