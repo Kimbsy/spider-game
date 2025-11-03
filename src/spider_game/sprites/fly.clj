@@ -27,9 +27,12 @@
         (shape/fill-rect! state [bx by] [(* bw remaining) bh] p/cyan)))))
 
 (defn update-fly!
-  [fly]
+  [{:keys [status] :as fly}]
   (-> fly
-      (update :remaining - escape-speed)
+      ((fn [f]
+         (if (= :escaping status)
+           (update f :remaining - escape-speed)
+           f)))
       sprite/update-animated-sprite))
 
 (defn fly

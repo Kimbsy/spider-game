@@ -113,7 +113,9 @@
              (fn [sprites]
                (pmap (fn [f]
                        (if (= uuid (:uuid f))
-                         (sprite/set-animation f :wrapped)
+                         (-> f
+                             (sprite/set-animation :wrapped)
+                             (assoc :status :wrapped))
                         f))
                      sprites))))
 
