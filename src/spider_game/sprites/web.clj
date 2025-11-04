@@ -4,9 +4,10 @@
             [clunk.palette :as p]
             [clunk.util :as u]
             [spider-game.common :as common]
-            [clojure.math :as math]))
+            [clojure.math :as math]
+            [clunk.core :as c]))
 
-;; @TODO: probably best th come up with a data structure for the
+;; @TODO: probably best to come up with a data structure for the
 ;; threads which can contains status, and be used for collision
 ;; detection.
 
@@ -25,6 +26,31 @@
   (let [vertical [0 r]]
     (for [i (range n)]
       (mapv + pos (u/rotate-vector vertical (* i (/ 360 n)))))))
+
+(defn except-broken
+  [broken threads]
+  (remove (fn [[a b]]
+            (or (contains? broken a)
+                (contains? broken b)))
+          threads))
+
+(defn recalculate-web
+  [{:keys [center broken-vertices r-max n-anchors n-rings initial-points-in-rings] :as web}]
+  (let [ring-threads (->> initial-points-in-rings
+                          (map #(partition
+                                 2 1
+                                 (take (inc n-anchors)
+                                       (cycle %))))
+                          (apply concat)
+                          (except-broken broken-vertices))
+
+        radial-threads (->> (mapcat (partial apply map list)
+                                    (partition 2 1 (concat [(repeat n-anchors center)]
+                                                           initial-points-in-rings)))
+                            (except-broken broken-vertices))]
+    (-> web
+        (assoc :radial-threads radial-threads)
+        (assoc :ring-threads ring-threads))))
 
 (defn find-nearest-unbroken
   [points broken pos]
@@ -56,83 +82,57 @@
             :best-d max-d}
            points)))
 
-(defn except-broken
-  [broken threads]
-  (remove (fn [[a b]]
-            (or (contains? broken a)
-                (contains? broken b)))
-          threads))
+(defn thread-set
+  [{:keys [radial-threads ring-threads]}]
+  (into (set radial-threads) ring-threads))
 
 (defn break-web-at
-  ;; @TODO: we should just set `size` on the web, then we wont need to pass in state (it's only used for window dimensions)
-  [{:keys [window] :as state} {:keys [broken-vertices] :as web} pos]
-  (let [[w h] (u/window-size window)
-        c (u/center window)
-        r-max (* (/ w 2) (math/sqrt 2))
-        n-anchors 13
-        n-rings 7
-
-        rings-points (map #(points c
-                                   n-anchors
-                                   (* (inc %) (/ r-max n-rings)))
-                          (range n-rings))
-
-        ;; @TODO: insane duplication between this and initialisation
-        ;; only difference is this
-        nearest (find-nearest-unbroken (apply concat rings-points) broken-vertices pos)
+  [{:keys [broken-vertices initial-points-in-rings radial-threads ring-threads] :as web} pos]
+  (let [current-threads (thread-set web)
+        nearest (find-nearest-unbroken
+                 (apply concat initial-points-in-rings)
+                 broken-vertices
+                 pos)
         broken-vertices (conj broken-vertices nearest)
-
-        rings (map #(partition 2 1
-                               (take (inc n-anchors)
-                                     (cycle %)))
-                   rings-points)
-        
-        ring-threads (->> (apply concat rings)
-                          (except-broken broken-vertices))
-
-        radial-threads (->> (mapcat (partial apply map vector)
-                                    (partition 2 1 (concat [(repeat n-anchors c)]
-                                                           rings-points)))
-                            (except-broken broken-vertices))]
-    (-> web
-        (assoc :broken-vertices broken-vertices)
-        (assoc :radial-threads radial-threads)
-        (assoc :ring-threads ring-threads))))
+        new-web (recalculate-web (assoc web :broken-vertices broken-vertices))
+        new-threads (thread-set new-web)]
+    (when nearest
+      (c/enqueue-event! {:event-type :spawn-web-break
+                         :source nearest
+                         :threads (filter (fn [[a b]]
+                                            (or (= a nearest)
+                                                (= b nearest)))
+                                          current-threads)}))
+    new-web))
 
 (defn fix-web-at
-  [{:keys [window] :as state} {:keys [broken-vertices] :as web} pos]
-  (let [[w h] (u/window-size window)
-        c (u/center window)
-        r-max (* (/ w 2) (math/sqrt 2))
-        n-anchors 13
-        n-rings 7
+  [{:keys [broken-vertices initial-points-in-rings] :as web} pos]
+  (let [;; only fix if close enough
+        max-distance 100
+        nearest (find-nearest-broken
+                 (apply concat initial-points-in-rings)
+                 broken-vertices
+                 pos
+                 max-distance)
+        broken-vertices (disj broken-vertices nearest)]
+    (recalculate-web (assoc web :broken-vertices broken-vertices))))
 
-        rings-points (map #(points c
-                                   n-anchors
-                                   (* (inc %) (/ r-max n-rings)))
-                          (range n-rings))
+(defn points-in-rings
+ "Get all of the points, grouped into rings"
+  [center r-max n-anchors n-rings]
+  (map #(points center
+                n-anchors
+                (* (inc %) (/ r-max n-rings)))
+       (range n-rings)))
 
-        ;; only fix if close enough
-        max-d 100
-        nearest (find-nearest-broken (apply concat rings-points) broken-vertices pos max-d)
-        broken-vertices (disj broken-vertices nearest)
+;; so to do animated fixing we should:
 
-        rings (map #(partition 2 1
-                               (take (inc n-anchors)
-                                     (cycle %)))
-                   rings-points)
+;; - get the current set of lines
+;; - calculate the set of lines after the fix
+;; - create a web-fix sprite containing the details of the new lines
+;; - once animation finished, fix the web for real
 
-        ring-threads (->> (apply concat rings)
-                          (except-broken broken-vertices))
 
-        radial-threads (->> (mapcat (partial apply map vector)
-                                    (partition 2 1 (concat [(repeat n-anchors c)]
-                                                           rings-points)))
-                            (except-broken broken-vertices))]
-    (-> web
-        (assoc :broken-vertices broken-vertices)
-        (assoc :radial-threads radial-threads)
-        (assoc :ring-threads ring-threads))))
 
 (defn web
   [window]
@@ -141,27 +141,16 @@
         r-max (* (/ w 2) (math/sqrt 2))
         n-anchors 13
         n-rings 7
-        
-        rings-points (map #(points c
-                                   n-anchors
-                                   (* (inc %) (/ r-max n-rings)))
-                          (range n-rings))
-
-        rings (map #(partition 2 1
-                               (take (inc n-anchors)
-                                     (cycle %)))
-                   rings-points)
-      
-        ring-threads (apply concat rings)
-
-        radial-threads (mapcat (partial apply map vector)
-                               (partition 2 1 (concat [(repeat n-anchors c)]
-                                                      rings-points)))]
-    (sprite/sprite
-     :web
-     [0 0]
-     :update-fn update-web
-     :draw-fn draw-web!
-     :extra {:radial-threads radial-threads
-             :ring-threads ring-threads
-             :broken-vertices #{}})))
+        initial-points-in-rings (points-in-rings c r-max n-anchors n-rings)]
+    (-> (sprite/sprite
+         :web
+         [0 0]
+         :update-fn update-web
+         :draw-fn draw-web!
+         :extra {:center c
+                 :r-max r-max
+                 :n-anchors n-anchors
+                 :n-rings n-rings
+                 :broken-vertices #{}
+                 :initial-points-in-rings initial-points-in-rings})
+        recalculate-web)))

@@ -12,7 +12,8 @@
             [spider-game.sprites.player-spider :as ps]
             [spider-game.sprites.web :as web]
             [clunk.shape :as shape]
-            [clunk.palette :as p]))
+            [clunk.palette :as p]
+            [spider-game.sprites.web-break :as web-break]))
 
 (defn flies
   [n window]
@@ -23,8 +24,9 @@
   [{:keys [window] :as state}]
   (concat 
    [(web/web window)]
-   (flies 10 window)
-   [(ps/spider (u/center window))]))
+   ;; (flies 1 window)
+   ;; [(ps/spider (u/center window))]
+   ))
 
 (defn draw-level-01!
   "Called each frame, draws the current scene to the screen"
@@ -60,12 +62,21 @@
                               (= :escaped (:status s))))
                        sprites))))
 
+(defn remove-flagged
+  [{:keys [current-scene] :as state}]
+  (update-in state [:scenes current-scene :sprites]
+             (fn [sprites]
+               (remove (fn [s]
+                         (= :remove-me (:status s)))
+                       sprites))))
+
 (defn update-level-01
   "Called each frame, update the sprites in the current scene"
   [state]
   (-> state
       handle-escapes
       remove-escaped
+      remove-flagged
       sprite/update-state
       tween/update-state
       ((fn [state]
@@ -91,23 +102,23 @@
 ;; @NOTE: helpful debugging function
 (defn break-web-on-click
   [state {:keys [pos] :as e}]
-  (if (i/is e i/M_LEFT)
+  (if (i/is e :button i/M_LEFT)
     (sprite/update-sprites
      state
      (sprite/has-group :web)
      (fn [w]
-       (web/break-web-at state w pos)))
+       (web/break-web-at w pos)))
     state))
 
 ;; @NOTE: helpful debugging function
 (defn fix-web-on-click
   [state {:keys [pos] :as e}]
-  (if (i/is e i/M_LEFT)
+  (if (i/is e :button i/M_RIGHT)
     (sprite/update-sprites
      state
      (sprite/has-group :web)
      (fn [w]
-       (web/fix-web-at state w pos)))
+       (web/fix-web-at w pos)))
     state))
 
 (defn move-spider-on-click
@@ -161,6 +172,15 @@
          (web/fix-web-at state w (:pos spider)))))
     state))
 
+(defn spawn-web-break
+  [{:keys [current-scene] :as state} {:keys [source threads]}]
+  ;; (prn source)
+  ;; (prn threads)
+  (update-in state
+             [:scenes current-scene :sprites]
+             conj
+             (web-break/web-break source threads)))
+
 (defn init
   "Initialise this scene"
   [state]
@@ -168,6 +188,7 @@
    :draw-fn draw-level-01!
    :update-fn update-level-01
    :colliders (colliders)
-   :mouse-button-fns [move-spider-on-click]
-   :key-fns [bite-on-space
-             repair-web-on-r]})
+   :mouse-button-fns [#_move-spider-on-click break-web-on-click fix-web-on-click]
+   :key-fns [] #_[bite-on-space
+                  repair-web-on-r]
+   :spawn-web-break-fns [spawn-web-break]})
