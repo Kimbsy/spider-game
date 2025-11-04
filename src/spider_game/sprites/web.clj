@@ -94,8 +94,7 @@
                  broken-vertices
                  pos)
         broken-vertices (conj broken-vertices nearest)
-        new-web (recalculate-web (assoc web :broken-vertices broken-vertices))
-        new-threads (thread-set new-web)]
+        new-web (recalculate-web (assoc web :broken-vertices broken-vertices))]
     (when nearest
       (c/enqueue-event! {:event-type :spawn-web-break
                          :source nearest
@@ -104,6 +103,12 @@
                                                 (= b nearest)))
                                           current-threads)}))
     new-web))
+
+(defn complete-fix
+  [web pos]
+  (-> web
+      (update :broken-vertices disj pos)
+      recalculate-web))
 
 (defn fix-web-at
   [{:keys [broken-vertices initial-points-in-rings] :as web} pos]
@@ -115,7 +120,16 @@
                  pos
                  max-distance)
         broken-vertices (disj broken-vertices nearest)]
-    (recalculate-web (assoc web :broken-vertices broken-vertices))))
+    (if nearest
+      (let [current-threads (thread-set web)
+            broken-vertices (disj broken-vertices nearest)
+            new-web (recalculate-web (assoc web :broken-vertices broken-vertices))
+            new-threads (thread-set new-web)]
+        (c/enqueue-event! {:event-type :spawn-web-fix
+                           :source nearest
+                           :threads (clojure.set/difference new-threads current-threads)})
+        web)
+      web)))
 
 (defn points-in-rings
  "Get all of the points, grouped into rings"
@@ -124,15 +138,6 @@
                 n-anchors
                 (* (inc %) (/ r-max n-rings)))
        (range n-rings)))
-
-;; so to do animated fixing we should:
-
-;; - get the current set of lines
-;; - calculate the set of lines after the fix
-;; - create a web-fix sprite containing the details of the new lines
-;; - once animation finished, fix the web for real
-
-
 
 (defn web
   [window]

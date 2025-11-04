@@ -13,7 +13,8 @@
             [spider-game.sprites.web :as web]
             [clunk.shape :as shape]
             [clunk.palette :as p]
-            [spider-game.sprites.web-break :as web-break]))
+            [spider-game.sprites.web-break :as web-break]
+            [spider-game.sprites.web-fix :as web-fix]))
 
 (defn flies
   [n window]
@@ -24,8 +25,8 @@
   [{:keys [window] :as state}]
   (concat 
    [(web/web window)]
-   ;; (flies 1 window)
-   ;; [(ps/spider (u/center window))]
+   (flies 2 window)
+   [(ps/spider (u/center window))]
    ))
 
 (defn draw-level-01!
@@ -48,7 +49,7 @@
                     (sprite/update-sprites
                      (sprite/has-group :web)
                      (fn [w]
-                       (web/break-web-at acc-state w (:pos f)))))
+                       (web/break-web-at w (:pos f)))))
                 acc-state))
             state
             flies)))
@@ -162,24 +163,38 @@
 ;; @TODO: need to animate repair, need to use up some kind of resources, need to indicatew that spider is in range of repair
 (defn repair-web-on-r
   [{:keys [current-scene] :as state} {:keys [pos] :as e}]
-  (if (i/is e i/M_LEFT)
+  (if (i/is e :key i/K_R)
     (let [sprites (get-in state [:scenes current-scene :sprites])
           spider (first (filter (sprite/has-group :player-spider) sprites))]
       (sprite/update-sprites
        state
        (sprite/has-group :web)
        (fn [w]
-         (web/fix-web-at state w (:pos spider)))))
+         (web/fix-web-at w (:pos spider)))))
     state))
 
 (defn spawn-web-break
   [{:keys [current-scene] :as state} {:keys [source threads]}]
-  ;; (prn source)
-  ;; (prn threads)
   (update-in state
              [:scenes current-scene :sprites]
              conj
              (web-break/web-break source threads)))
+
+(defn spawn-web-fix
+  [{:keys [current-scene] :as state} {:keys [source threads]}]
+  (let [wf (web-fix/web-fix source threads)]
+    (update-in state
+               [:scenes current-scene :sprites]
+               conj
+               wf)))
+
+(defn complete-fix
+  [state {:keys [pos]}]
+  (sprite/update-sprites
+   state
+   (sprite/has-group :web)
+   (fn [w]
+     (web/complete-fix w pos))))
 
 (defn init
   "Initialise this scene"
@@ -188,7 +203,12 @@
    :draw-fn draw-level-01!
    :update-fn update-level-01
    :colliders (colliders)
-   :mouse-button-fns [#_move-spider-on-click break-web-on-click fix-web-on-click]
-   :key-fns [] #_[bite-on-space
-                  repair-web-on-r]
-   :spawn-web-break-fns [spawn-web-break]})
+   :mouse-button-fns [move-spider-on-click
+                      ;; break-web-on-click
+                      ;; fix-web-on-click
+                      ]
+   :key-fns [bite-on-space
+             repair-web-on-r]
+   :spawn-web-break-fns [spawn-web-break]
+   :spawn-web-fix-fns [spawn-web-fix]
+   :complete-fix-fns [complete-fix]})
