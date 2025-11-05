@@ -81,12 +81,24 @@
   ;; hitbox?
   (let [set-points (get-in state [:scenes current-scene :wrap-points])
         wrapping? (= :wrapping (get-in state [:scenes current-scene :status]))
+        m-pos (u/mouse-pos window)
         wrap-points (if wrapping?
                       (conj set-points
-                            (u/mouse-pos window))
+                            m-pos)
                       set-points)
         lines (partition 2 1 wrap-points)]
-    (shape/draw-lines! state lines (if wrapping? common/spider-white p/green) :line-width 3)))
+    (shape/draw-lines! state lines (if wrapping? common/spider-white p/green) :line-width 3)
+
+    ;; draw red line if we can't place the current choice
+    (let [sprites (get-in state [:scenes current-scene :sprites])
+          fly (first (filter (sprite/has-group :fly) sprites))]
+      (when (and wrapping?
+                 (seq lines)
+                 ;; @NOTE, bit of a hack to use existing sprite-based collision detection
+                 (collision/pos-in-rect? {:pos m-pos :size [0 0] :offsets [:center]} fly))
+        (let [[p1 p2] (last lines)]
+          ;; @TODO: clunk should take a [p1 p2] vector here
+          (shape/draw-line! state p1 p2 p/red :line-width 3))))))
 
 (defn line-hits-rect?
   [[a b c d :as _rect-points] line]
@@ -107,14 +119,23 @@
                         f))
                      sprites))))
 
+(defn fly-bounding-rect
+  [{:keys [current-scene] :as state}]
+  (let [sprites (get-in state [:scenes current-scene :sprites])
+        {:keys [pos bounds-fn] :as fly} (first (filter (sprite/has-group :fly) sprites))
+        pos-offsets (sprite/pos-offsets fly)
+        rect (map (partial map + pos pos-offsets) (bounds-fn fly))]
+    rect))
+
 (defn check-wrapped
   [{:keys [window current-scene] :as state}]
   (let [wrap-points (get-in state [:scenes current-scene :wrap-points])
         lines (partition 2 1 wrap-points)
-        sprites (get-in state [:scenes current-scene :sprites])
-        {:keys [pos bounds-fn] :as fly} (first (filter (sprite/has-group :fly) sprites))
-        pos-offsets (sprite/pos-offsets fly)
-        rect (map (partial map + pos pos-offsets) (bounds-fn fly))]
+        ;; sprites (get-in state [:scenes current-scene :sprites])
+        ;; {:keys [pos bounds-fn] :as fly} (first (filter (sprite/has-group :fly) sprites))
+        ;; pos-offsets (sprite/pos-offsets fly)
+        ;; rect (map (partial map + pos pos-offsets) (bounds-fn fly))
+        rect (fly-bounding-rect state)]
     (if (<= wraps-required (count (filter (partial line-hits-rect? rect) lines)))
       (-> state
           (assoc-in [:scenes current-scene :status] :wrapped)
@@ -135,11 +156,15 @@
     state))
 
 (defn click
-  [{:keys [current-scene] :as state} e]
-  (if (and (= :wrapping (get-in state [:scenes current-scene :status]))
-           (i/is e :button i/M_LEFT))
-    (update-in state [:scenes current-scene :wrap-points] conj (:pos e))
-    state))
+  [{:keys [current-scene] :as state} {:keys [pos] :as e}]
+  (let [sprites (get-in state [:scenes current-scene :sprites])
+        fly (first (filter (sprite/has-group :fly) sprites))]
+    (if (and (= :wrapping (get-in state [:scenes current-scene :status]))
+             (i/is e :button i/M_LEFT)
+             ;; @NOTE, bit of a hack to use existing sprite-based collision detection
+             (not (collision/pos-in-rect? {:pos pos :size [0 0] :offsets [:center]} fly)))
+      (update-in state [:scenes current-scene :wrap-points] conj pos)
+      state)))
 
 (defn init
   "Initialise this scene"
