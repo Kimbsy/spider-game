@@ -25,9 +25,8 @@
   [{:keys [window] :as state}]
   (concat 
    [(web/web window)]
-   (flies 2 window)
-   [(ps/spider (u/center window))]
-   ))
+   (flies 3 window)
+   [(ps/spider (u/center window))]))
 
 (defn draw-level-01!
   "Called each frame, draws the current scene to the screen"
@@ -41,11 +40,11 @@
                       (get-in state [:scenes current-scene :sprites]))]
     (reduce (fn [acc-state f]
               (if (and (not (pos? (:remaining f)))
-                       (not= :escaped (:status f)))
+                       (= :struggling (:status f)))
                 (-> acc-state
                     (sprite/update-sprites
                      (sprite/is-sprite f)
-                     #(assoc % :status :escaped))
+                     fly/begin-escape)
                     (sprite/update-sprites
                      (sprite/has-group :web)
                      (fn [w]
@@ -139,7 +138,7 @@
     (let [sprites (get-in state [:scenes current-scene :sprites])
           spider (first (filter (sprite/has-group :player-spider) sprites))
           flies (filter (sprite/has-group :fly) sprites)
-          target-fly (first (filter #(and (= :escaping (:current-animation %1))
+          target-fly (first (filter #(and (= :struggling (:current-animation %1))
                                           (collision/w-h-rects-collide? %1 spider))
                                     flies))]
       (if target-fly

@@ -7,6 +7,34 @@
 ;; How much of the total (1.0) escape per frame
 (def escape-speed 0.001)
 
+(defn begin-escape
+  [fly]
+  (let [half-move-t 35
+        move-t (* half-move-t 2)]
+    (-> fly
+        (assoc :status :escaping)
+        (assoc :hide-timer? true)
+        (update :tweens (fn [ts] (remove #(= :wiggle (:tag %)) ts)))
+        (tween/add-tween
+         (tween/tween :pos
+                      (rand-nth [150 -150])
+                      :update-fn tween/tween-x-fn
+                      :step-count move-t))
+        (tween/add-tween
+         (tween/tween :pos
+                      -100
+                      :update-fn tween/tween-y-fn
+                      :step-count half-move-t
+                      :easing-fn tween/ease-out-sine
+                      :yoyo? true
+                      :yoyo-update-fn tween/tween-y-yoyo-fn))
+        (tween/add-tween
+         (tween/tween :scale
+                      -1
+                      :update-fn (fn [[x y] d]
+                                   [(+ x d) (+ y d)])
+                      :step-count move-t)))))
+
 (defn draw-fly!
   [state
    {:keys [current-animation remaining hide-timer?]
@@ -15,7 +43,8 @@
     :as fly}]
   (sprite/draw-animated-sprite! state fly)
 
-  (when (and (= :escaping current-animation)
+  ;; draw escape timer
+  (when (and (= :struggling current-animation)
              (not hide-timer?))
     (let [bw fw
           bh 10
@@ -30,7 +59,7 @@
   [{:keys [status] :as fly}]
   (-> fly
       ((fn [f]
-         (if (= :escaping status)
+         (if (= :struggling status)
            (update f :remaining - escape-speed)
            f)))
       sprite/update-animated-sprite))
@@ -45,27 +74,29 @@
        [64 96]
        :fly-spritesheet
        [64 192]
-       :animations {:escaping {:frames 1
+       :animations {:struggling {:frames 1
                                :y-offset 0
                                :frame-delay 100}
                     :wrapped {:frames 1
                               :y-offset 1
                               :frame-delay 100}}
-       :current-animation :escaping
+       :current-animation :struggling
        :rotation (rand-int 360)
        :draw-fn draw-fly!
        :update-fn update-fly!
-       :extra {:remaining (+ 0.5 (/ (rand) 2))
+       :extra {:remaining 0.1 #_ (+ 0.5 (/ (rand) 2))
                :hide-timer? hide-timer?
-               :status :escaping})
+               :status :struggling
+               :scale [1 1]})
       (tween/add-tween
-       (tween/tween
-        :rotation
-        20
-        :step-count 5
-        :yoyo? true
-        :repeat-times ##Inf
-        :initial-delay (rand-int 20)
-        :on-repeat-delay 20
-        :easing-fn tween/ease-in-out-sine
-        ))))
+       (assoc
+        (tween/tween
+         :rotation
+         20
+         :step-count 5
+         :yoyo? true
+         :repeat-times ##Inf
+         :initial-delay (rand-int 20)
+         :on-repeat-delay 20
+         :easing-fn tween/ease-in-out-sine)
+        :tag :wiggle))))
