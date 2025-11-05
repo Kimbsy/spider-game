@@ -6,6 +6,7 @@
             [clunk.sprite :as sprite]
             [clunk.tween :as tween]
             [clunk.util :as u]
+            [clunk.delay :as delay]
             [spider-game.common :as common]
             [spider-game.scenes.bite-overlay :as bite-overlay]
             [spider-game.sprites.fly :as fly]
@@ -26,14 +27,28 @@
   [{:keys [window] :as state}]
   (concat 
    [(web/web window)]
-   (flies 3 window)
+;;   (flies 3 window)
    [(ps/spider (u/center window))]))
 
+;; @TODO: tell clunk which order to draw sprites in
 (defn draw-level-01!
   "Called each frame, draws the current scene to the screen"
-  [state]
+  [{:keys [current-scene] :as state}]
   (c/draw-background! common/dark-green)
-  (sprite/draw-scene-sprites! state))
+  ;; draw web first
+  (let [sprites (get-in state [:scenes current-scene :sprites])
+        [[web] others] (u/split-by (sprite/has-group :web) sprites)
+        draw-web! (:draw-fn web)]
+    (draw-web! state web)
+
+    ;; then draw the rest
+    (doall
+     (map (fn [{:keys [draw-fn debug?] :as s}]
+            (draw-fn state s)
+            (when debug?
+              (sprite/draw-bounds state s)
+              (sprite/draw-center state s)))
+          others))))
 
 (defn handle-escapes
   [{:keys [current-scene] :as state}]
@@ -80,14 +95,16 @@
       remove-flagged
       sprite/update-state
       tween/update-state
+      delay/update-state
+      ;; @TODO: temp hack, set spider to debug=false so we can turn it
+      ;; on if it's near a fly in the collisions update
       ((fn [state]
          (sprite/update-sprites
           state
           (sprite/has-group :player-spider)
           (fn [s]
             (assoc s :debug? false)))))
-      collision/update-state
-      ))
+      collision/update-state))
 
 ;; @TODO: not working, could do with a "no collisions fn", otherwise we trigger non-hit for each fly that doesn't collide
 (defn colliders
@@ -176,7 +193,7 @@
     :else
     state))
 
-;; @TODO: need to animate repair, need to use up some kind of resources, need to indicatew that spider is in range of repair
+;; @TODO: need to use up some kind of resources, need to indicatew that spider is in range of repair
 (defn repair-web-on-r
   [{:keys [current-scene] :as state} {:keys [pos] :as e}]
   (if (i/is e :key i/K_R)
@@ -212,6 +229,52 @@
    (fn [w]
      (web/complete-fix w pos))))
 
+(def initial-spawn-delay-ms 8000)
+(def min-spawn-delay-ms 1500)
+(def max-flies 6)
+(def no-fly-zone 100)
+
+(defn random-fly-pos
+  [window]
+  (let [[w h] (u/window-size window)]
+    [(+ no-fly-zone
+        (rand-int (- w (* no-fly-zone 2))))
+     (+ no-fly-zone
+        (rand-int (- h (* no-fly-zone 2))))]))
+
+(defn spawn-flies
+  [{:keys [window current-scene] :as state}]
+  (let [spawn-delay-ms (get-in state [:scenes current-scene :spawn-delay-ms])
+        flies (filter (fn [f] (and (= :struggling (:status f))
+                                   ((sprite/has-group :fly) f)))
+                      (get-in state [:scenes current-scene :sprites]))]
+    (if (< (count flies) max-flies)
+      ;; @TODO: slowly increase max flies too? maybe up to like 9?
+      ;; spawn a fly, speed up, repeat
+      (-> state
+          (update-in [:scenes current-scene :sprites]
+                     #(conj % (fly/fly (random-fly-pos window))))
+          (delay/add-delay-fn
+           (delay/delay-fn spawn-delay-ms
+                           spawn-flies
+                           :tag :spawn-flies))
+          (update-in [:scenes current-scene :spawn-delay-ms]
+                     #(max min-spawn-delay-ms (- % 1000))))
+
+      ;; too many flies, don't spawn, don't speed up, just repeat
+      (delay/add-delay-fn
+       state
+       (delay/delay-fn spawn-delay-ms
+                       spawn-flies
+                       :tag :spawn-flies)))))
+
+(defn initial-delays
+  [{:keys [current-scene] :as state}]
+  [(delay/delay-fn
+    3000
+    spawn-flies
+    :tag :initial-spawn-flies)])
+
 (defn init
   "Initialise this scene"
   [state]
@@ -227,4 +290,6 @@
              repair-web-on-r]
    :spawn-web-break-fns [spawn-web-break]
    :spawn-web-fix-fns [spawn-web-fix]
-   :complete-fix-fns [complete-fix]})
+   :complete-fix-fns [complete-fix]
+   :delay-fns (initial-delays state)
+   :spawn-delay-ms initial-spawn-delay-ms})
