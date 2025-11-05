@@ -4,7 +4,8 @@
             [spider-game.scenes.bite-overlay :as bite-overlay]
             [spider-game.scenes.level-01 :as level-01]
             [spider-game.scenes.menu :as menu]
-            [spider-game.scenes.wrap-overlay :as wrap-overlay]))
+            [spider-game.scenes.wrap-overlay :as wrap-overlay]
+            [spider-game.scenes.repair-overlay :as repair-overlay]))
 
 (defn init-scenes
   "Map of scenes in the game"
@@ -12,6 +13,7 @@
   {:level-01 (level-01/init state)
    :bite-overlay (bite-overlay/init state)
    :wrap-overlay (wrap-overlay/init state)
+   :repair-overlay (repair-overlay/init state)
    :menu (menu/init state)})
 
 ;; Configure the game

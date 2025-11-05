@@ -28,7 +28,6 @@
         iw (- fgw c-pad)
         ih (- fgh c-pad)]
     (concat
-     ;; @TODO: add drop shadow?
      [(sprite/geometry-sprite :shadow
                               [(+ cx shadow-pad) (+ cy shadow-pad)]
                               [[0 0]
@@ -67,22 +66,11 @@
                               :fill? true)
       (fly/fly center :hide-timer? true)])))
 
-(defn draw-level-01!
-  [state]
-  (let [{:keys [draw-fn sprites]} (get-in state [:scenes :level-01])]
-    (doall
-     (map (fn [{:keys [draw-fn debug?] :as s}]
-            (draw-fn state s)
-            (when debug?
-              (sprite/draw-bounds state s)
-              (sprite/draw-center state s)))
-          sprites))))
-
 (defn draw-wrap-overlay!
   [{:keys [window current-scene] :as state}]
   ;; draw level-01 scene
   (c/draw-background! common/dark-green)
-  (draw-level-01! state)
+  (common/draw-level-01! state)
 
   (sprite/draw-scene-sprites! state)
 

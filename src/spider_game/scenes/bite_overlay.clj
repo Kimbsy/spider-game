@@ -118,22 +118,11 @@
                   :repeat-times ##Inf)
                  :tag :movement)))]))))))
 
-(defn draw-level-01!
-  [state]
-  (let [{:keys [draw-fn sprites]} (get-in state [:scenes :level-01])]
-    (doall
-     (map (fn [{:keys [draw-fn debug?] :as s}]
-            (draw-fn state s)
-            (when debug?
-              (sprite/draw-bounds state s)
-              (sprite/draw-center state s)))
-          sprites))))
-
 (defn draw-bite-overlay!
   [{:keys [window] :as state}]
   ;; draw level-01 scene
   (c/draw-background! common/dark-green)
-  (draw-level-01! state)
+  (common/draw-level-01! state)
 
   (sprite/draw-scene-sprites! state))
 
@@ -150,31 +139,31 @@
           g (first (filter (sprite/has-group :good) sprites))
           p (first (filter (sprite/has-group :perfect) sprites))]
       (cond
+        ;; PERFECT
         (collision/w-h-rects-collide? cb p)
-        (do (prn "PERFECT")
-            (-> state
-                ((fn [state]
-                   (assoc-in state
-                             [:scenes :wrap-overlay]
-                             ;; also insert he fly uuid so we know
-                             ;; which sprite to wrap once we're done
-                             (assoc (wrap-overlay/init state)
-                                    :fly-uuid (get-in state [:scenes current-scene :fly-uuid])))))
-                (scene/transition
-                 :wrap-overlay)))
+        (-> state
+            ((fn [state]
+               (assoc-in state
+                         [:scenes :wrap-overlay]
+                         ;; also insert he fly uuid so we know
+                         ;; which sprite to wrap once we're done
+                         (assoc (wrap-overlay/init state)
+                                :fly-uuid (get-in state [:scenes current-scene :fly-uuid])))))
+            (scene/transition
+             :wrap-overlay))
 
+        ;; GOOD
         (collision/w-h-rects-collide? cb g)
-        (do (prn "GOOD")
-            (-> state
-                ((fn [state]
-                   (assoc-in state
-                             [:scenes :wrap-overlay]
-                             ;; also insert he fly uuid so we know
-                             ;; which sprite to wrap once we're done
-                             (assoc (wrap-overlay/init state)
-                                    :fly-uuid (get-in state [:scenes current-scene :fly-uuid])))))
-                (scene/transition
-                 :wrap-overlay)))
+        (-> state
+            ((fn [state]
+               (assoc-in state
+                         [:scenes :wrap-overlay]
+                         ;; also insert he fly uuid so we know
+                         ;; which sprite to wrap once we're done
+                         (assoc (wrap-overlay/init state)
+                                :fly-uuid (get-in state [:scenes current-scene :fly-uuid])))))
+            (scene/transition
+             :wrap-overlay))
 
         ;; else 
         :else

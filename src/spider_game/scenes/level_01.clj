@@ -14,7 +14,8 @@
             [clunk.shape :as shape]
             [clunk.palette :as p]
             [spider-game.sprites.web-break :as web-break]
-            [spider-game.sprites.web-fix :as web-fix]))
+            [spider-game.sprites.web-fix :as web-fix]
+            [spider-game.scenes.repair-overlay :as repair-overlay]))
 
 (defn flies
   [n window]
@@ -111,9 +112,24 @@
     state))
 
 ;; @NOTE: helpful debugging function
-(defn fix-web-on-click
+(defn repair-on-click
   [state {:keys [pos] :as e}]
   (if (i/is e :button i/M_RIGHT)
+    ;; This is for using he repair overlay, but honestly it's just not that fun.
+    ;; ;; @TODO: get check nearest first
+    ;; (scene/transition
+    ;;  state
+    ;;  :repair-overlay
+    ;;  :transition-length 0
+    ;;  :init-fn (fn [state]
+    ;;             (assoc-in state
+    ;;                       [:scenes :repair-overlay]
+    ;;                       ;; ensure the connections are randomised
+    ;;                       (assoc (repair-overlay/init state)
+    ;;                              ;; also insert the repair pos so we
+    ;;                              ;; know where to repair when we're
+    ;;                              ;; done
+    ;;                              :repair-pos pos))))
     (sprite/update-sprites
      state
      (sprite/has-group :web)
@@ -146,13 +162,14 @@
          state
          :bite-overlay
          :transition-length 0
-         ;; ensure the goal is in a new random position
          :init-fn (fn [state]
                     (assoc-in state
                               [:scenes :bite-overlay]
-                              ;; also insert he fly uuid so we know
-                              ;; which sprite to wrap once we're done
+                              ;; ensure the goal is in a new random position
                               (assoc (bite-overlay/init state)
+                                     ;; also insert the fly uuid so we
+                                     ;; know which sprite to wrap once
+                                     ;; we're done
                                      :fly-uuid (:uuid target-fly)))))
         state))
 
@@ -204,7 +221,7 @@
    :colliders (colliders)
    :mouse-button-fns [move-spider-on-click
                       ;; break-web-on-click
-                      ;; fix-web-on-click
+                      ;; repair-on-click
                       ]
    :key-fns [bite-on-space
              repair-web-on-r]
