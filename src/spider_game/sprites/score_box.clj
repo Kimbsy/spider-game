@@ -10,6 +10,10 @@
    {:keys [pos show-fly? fly score]
     [w h :as size] :size}]
   (shape/fill-rect! state
+                    (map - pos [(/ w 2) (/ h 2)] [-10 0])
+                    (map + size [0 10])
+                    (assoc p/black 3 0.4))
+  (shape/fill-rect! state
                     (map - pos [(/ w 2) (/ h 2)])
                     size
                     p/grey)
