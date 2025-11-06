@@ -110,12 +110,19 @@
 (defn colliders
   []
   []
-  #_[(collision/collider
-    :player-spider
+  [(collision/collider
     :fly
-    (fn [spider _fly]
-      (assoc spider :debug? true))
-    collision/identity-collide-fn)])
+    :player-spider
+    (fn [{:keys [status] :as fly} _spider]
+      (if (= :struggling status)
+        (sprite/set-animation fly :biteable)
+        fly))
+    collision/identity-collide-fn
+    :non-collide-fn-a
+    (fn [{:keys [status] :as fly} _spider]
+      (if (= :struggling status)
+        (sprite/set-animation fly :struggling)
+        fly)))])
 
 ;; @NOTE: helpful debugging function
 (defn break-web-on-click
@@ -171,7 +178,7 @@
     (let [sprites (get-in state [:scenes current-scene :sprites])
           spider (first (filter (sprite/has-group :player-spider) sprites))
           flies (filter (sprite/has-group :fly) sprites)
-          target-fly (first (filter #(and (= :struggling (:current-animation %1))
+          target-fly (first (filter #(and (#{:biteable :struggling} (:current-animation %1))
                                           (collision/w-h-rects-collide? %1 spider))
                                     flies))]
       (if target-fly

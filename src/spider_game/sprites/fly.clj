@@ -44,7 +44,7 @@
   (sprite/draw-animated-sprite! state fly)
 
   ;; draw escape timer
-  (when (and (= :struggling current-animation)
+  (when (and (not= :wrapped current-animation)
              (not hide-timer?))
     (let [bw fw
           bh 10
@@ -73,12 +73,15 @@
        pos
        [64 96]
        :fly-spritesheet
-       [64 192]
+       [64 288]
        :animations {:struggling {:frames 1
                                :y-offset 0
+                                 :frame-delay 100}
+                    :biteable {:frames 1
+                               :y-offset 1
                                :frame-delay 100}
                     :wrapped {:frames 1
-                              :y-offset 1
+                              :y-offset 2
                               :frame-delay 100}}
        :current-animation :struggling
        :rotation (rand-int 360)
