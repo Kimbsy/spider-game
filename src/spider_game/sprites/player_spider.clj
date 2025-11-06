@@ -201,7 +201,6 @@
            pos
            :update-fn update-spider
            :draw-fn draw-spider
-           :debug? true
            :extra {:initial-offsets initial-offsets
                    :feet (mapv (fn [offset]
                                  {:reset-offset offset

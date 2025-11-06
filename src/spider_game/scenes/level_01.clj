@@ -17,7 +17,8 @@
             [spider-game.sprites.web-break :as web-break]
             [spider-game.sprites.web-fix :as web-fix]
             [spider-game.scenes.repair-overlay :as repair-overlay]
-            [spider-game.sprites.score-box :as score-box]))
+            [spider-game.sprites.score-box :as score-box]
+            [spider-game.sprites.round-timer :as round-timer]))
 
 (defn flies
   [n window]
@@ -30,8 +31,9 @@
    [(web/web window)]
 ;;   (flies 3 window)
    [(ps/spider (u/center window))
-    (score-box/score-box)]
-   ))
+    (score-box/score-box)
+    (round-timer/round-timer (u/window-pos window [0.507 0.067]) (assoc p/black 3 0.4))
+    (round-timer/round-timer (u/window-pos window [0.5 0.06]) p/white)]))
 
 ;; @TODO: tell clunk which order to draw sprites in
 (defn draw-level-01!
@@ -93,20 +95,13 @@
   "Called each frame, update the sprites in the current scene"
   [state]
   (-> state
+      round-timer/update-state
       handle-escapes
       remove-escaped
       remove-flagged
       sprite/update-state
       tween/update-state
       delay/update-state
-      ;; @TODO: temp hack, set spider to debug=false so we can turn it
-      ;; on if it's near a fly in the collisions update
-      ((fn [state]
-         (sprite/update-sprites
-          state
-          (sprite/has-group :player-spider)
-          (fn [s]
-            (assoc s :debug? false)))))
       collision/update-state))
 
 ;; @TODO: not working, could do with a "no collisions fn", otherwise we trigger non-hit for each fly that doesn't collide
@@ -241,7 +236,7 @@
 
 (def initial-spawn-delay-ms 8000)
 (def min-spawn-delay-ms 1500)
-(def max-flies 6)
+(def max-flies 4)
 (def no-fly-zone 100)
 
 (defn random-fly-pos
