@@ -2,7 +2,8 @@
   (:require [clunk.sprite :as sprite]
             [clunk.tween :as tween]
             [clunk.shape :as shape]
-            [clunk.palette :as p]))
+            [clunk.palette :as p]
+            [clunk.core :as c]))
 
 ;; How much of the total (1.0) escape per frame
 (def escape-speed 0.001)
@@ -34,6 +35,41 @@
                       :update-fn (fn [[x y] d]
                                    [(+ x d) (+ y d)])
                       :step-count move-t)))))
+
+(defn wrap-fly
+  [{:keys [rotation]
+    [x y] :pos
+    :as f}]
+  (-> f
+      (sprite/set-animation :wrapped)
+      (assoc :status :wrapped)
+      ;; @TODO: would be great to have a tween until function to
+      ;; recreate x and y tweens to a specific pos
+      (tween/add-tween
+       (tween/tween :pos
+                    60
+                    :step-count 30
+                    :easing-fn tween/ease-out-expo
+                    :from-value x
+                    :update-fn tween/tween-x-fn
+                    :on-complete-fn (fn [f]
+                                      (c/enqueue-event! {:event-type :inc-score
+                                                         :fly (assoc f :status :scoring)})
+                                      (assoc f :status :remove-me))))
+      (tween/add-tween
+       (tween/tween :pos
+                    50
+                    :step-count 30
+                    :easing-fn tween/ease-out-expo
+                    :from-value y
+                    :update-fn tween/tween-y-fn))
+      (tween/add-tween
+       (tween/tween :rotation
+                    25
+                    :step-count 30
+                    :easing-fn tween/ease-out-expo
+                    :from-value rotation))
+      (update :tweens (fn [ts] (remove #(= :wiggle (:tag %)) ts)))))
 
 (defn draw-fly!
   [state

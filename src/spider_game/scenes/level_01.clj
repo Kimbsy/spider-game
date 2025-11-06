@@ -16,7 +16,8 @@
             [clunk.palette :as p]
             [spider-game.sprites.web-break :as web-break]
             [spider-game.sprites.web-fix :as web-fix]
-            [spider-game.scenes.repair-overlay :as repair-overlay]))
+            [spider-game.scenes.repair-overlay :as repair-overlay]
+            [spider-game.sprites.score-box :as score-box]))
 
 (defn flies
   [n window]
@@ -28,7 +29,9 @@
   (concat 
    [(web/web window)]
 ;;   (flies 3 window)
-   [(ps/spider (u/center window))]))
+   [(ps/spider (u/center window))
+    (score-box/score-box)]
+   ))
 
 ;; @TODO: tell clunk which order to draw sprites in
 (defn draw-level-01!
@@ -282,6 +285,19 @@
     spawn-flies
     :tag :initial-spawn-flies)])
 
+(defn inc-score
+  [state {:keys [fly]}]
+  (sprite/update-sprites
+   state
+   (sprite/has-group :score-box)
+   (fn [{:keys [show-fly?] :as sb}]
+     (if (not show-fly?)
+       (-> sb
+           (assoc :fly fly)
+           (assoc :show-fly? true)
+           (update :score inc))
+       (update sb :score inc)))))
+
 (defn init
   "Initialise this scene"
   [state]
@@ -299,4 +315,5 @@
    :spawn-web-fix-fns [spawn-web-fix]
    :complete-fix-fns [complete-fix]
    :delay-fns (initial-delays state)
-   :spawn-delay-ms initial-spawn-delay-ms})
+   :spawn-delay-ms initial-spawn-delay-ms
+   :inc-score-fns [inc-score]})

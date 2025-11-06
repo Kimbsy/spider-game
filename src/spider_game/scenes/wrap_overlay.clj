@@ -9,12 +9,13 @@
             [clunk.scene :as scene]
             [spider-game.sprites.fly :as fly]
             [clunk.shape :as shape]
-            [clunk.collision :as collision]))
+            [clunk.collision :as collision]
+            [spider-game.sprites.score-box :as score-box]))
 
 (def wraps-required 5)
 
 (defn sprites
-  [{:keys [window] :as state}]
+  [{:keys [window current-scene] :as state}]
   (let [[w h] (u/window-size window)
         [cx cy :as center] (u/center window)
         shadow-pad 15
@@ -64,7 +65,11 @@
                               :size [iw ih]
                               :color p/grey
                               :fill? true)
-      (fly/fly center :hide-timer? true)])))
+      (let [fly-uuid (get-in state [:scenes current-scene :fly-uuid])
+            original-fly (first (filter (sprite/is-sprite {:uuid fly-uuid})
+                                        (get-in state [:scenes :level-01 :sprites])))]
+        (-> (fly/fly center :hide-timer? true)
+            (assoc :rotation (:rotation original-fly))))])))
 
 (defn draw-wrap-overlay!
   [{:keys [window current-scene] :as state}]
@@ -111,12 +116,16 @@
   [state uuid]
   (update-in state [:scenes :level-01 :sprites]
              (fn [sprites]
-               (pmap (fn [f]
-                       (if (= uuid (:uuid f))
-                         (-> f
-                             (sprite/set-animation :wrapped)
-                             (assoc :status :wrapped))
-                        f))
+               (pmap (fn [s]
+                       (cond
+                         (= uuid (:uuid s))
+                         (fly/wrap-fly s)
+
+                         (= :score-box (:sprite-group s))
+                         (score-box/show s)
+
+                         :else
+                         s))
                      sprites))))
 
 (defn fly-bounding-rect
@@ -131,10 +140,6 @@
   [{:keys [window current-scene] :as state}]
   (let [wrap-points (get-in state [:scenes current-scene :wrap-points])
         lines (partition 2 1 wrap-points)
-        ;; sprites (get-in state [:scenes current-scene :sprites])
-        ;; {:keys [pos bounds-fn] :as fly} (first (filter (sprite/has-group :fly) sprites))
-        ;; pos-offsets (sprite/pos-offsets fly)
-        ;; rect (map (partial map + pos pos-offsets) (bounds-fn fly))
         rect (fly-bounding-rect state)]
     (if (<= wraps-required (count (filter (partial line-hits-rect? rect) lines)))
       (-> state
@@ -173,6 +178,8 @@
    :draw-fn draw-wrap-overlay!
    :update-fn update-wrap-overlay
    :mouse-button-fns [click]
-   :key-fns [esc]
+   ;;   :key-fns [esc]
    :status :wrapping
-   :wrap-points []})
+   :wrap-points []
+   ;; gets set by bite-overlay
+   :fly-uuid nil})
