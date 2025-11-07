@@ -18,7 +18,8 @@
             [spider-game.sprites.web-fix :as web-fix]
             [spider-game.scenes.repair-overlay :as repair-overlay]
             [spider-game.sprites.score-box :as score-box]
-            [spider-game.sprites.round-timer :as round-timer]))
+            [spider-game.sprites.round-timer :as round-timer])
+  (:import (org.lwjgl.glfw GLFW)))
 
 (defn flies
   [n window]
@@ -29,7 +30,7 @@
   [{:keys [window] :as state}]
   (concat 
    [(web/web window)]
-;;   (flies 3 window)
+   ;;   (flies 3 window)
    [(ps/spider (u/center window))
     (score-box/score-box)
     (round-timer/round-timer (u/window-pos window [0.507 0.067]) (assoc p/black 3 0.4))
@@ -91,6 +92,87 @@
                          (= :remove-me (:status s)))
                        sprites))))
 
+(defn end-transition
+  [{:keys [window current-scene scenes] :as state}
+   target
+   i
+   transition-length]
+  (let [rc-title (get-in state [:scenes current-scene :rc-title])
+        [_x start-y] (:pos rc-title)
+        end-y 100
+        dy (- end-y start-y)
+        progress (float (/ i (/ transition-length 2)))
+        tweened-progress (tween/ease-out-expo progress)
+        current-y (* dy tweened-progress)
+        rc-title(update-in rc-title [:pos 1] + current-y)]
+    (if (< i (/ transition-length 2))
+      (do
+        (c/draw-game! (assoc state :current-scene current-scene))
+        (shape/fill-rect!
+         state
+         [0 0]
+         (u/window-size window)
+         [0 0 0 (float (/ (* 2 i) transition-length))])
+        (sprite/draw-text-sprite! state rc-title)
+        (GLFW/glfwSwapBuffers window))
+      (do
+        (c/draw-game! (assoc state :current-scene target))
+        (shape/fill-rect!
+         state
+         [0 0]
+         (u/window-size window)
+         [0 0 0 (float (/ (* 2 (- transition-length i)) transition-length))])
+        (sprite/draw-text-sprite! state rc-title)
+        (GLFW/glfwSwapBuffers window)))))
+
+(defn draw-text-sprite-with-drop-shadow
+  [state text-sprite]
+  (sprite/draw-text-sprite! state
+                            (-> text-sprite
+                                ;; @TODO: make [7 7] relative to font size?
+                                (update :pos #(map + [7 7] %))
+                                (assoc :color (assoc p/black 3 0.4))))
+  (sprite/draw-text-sprite! state
+                            text-sprite))
+
+(defn transition-end
+  [{:keys [current-scene] :as state}]
+  (let [rc-title (first (filter (sprite/has-group :round-clear-title)
+                                (get-in state [:scenes current-scene :sprites])))]
+    (-> state
+        (assoc-in [:scenes current-scene :rc-title]
+                  rc-title)
+        (update-in [:scenes current-scene :sprites]
+                   #(remove (sprite/has-group :round-clear-title) %))
+        (scene/transition :round-end
+                          :transition-fn end-transition
+                          :transition-length 100
+                          :init-fn (fn [st]
+                                     (update-in st [:scenes :round-end :sprites]
+                                                conj
+                                                (assoc-in rc-title [:pos 1] 100)))))))
+
+(defn check-end
+  [{:keys [window current-scene] :as state}]
+  (let [timer (first (filter (sprite/has-group :timer)
+                             (get-in state [:scenes current-scene :sprites])))]
+    (if (and (not= :ending (get-in state [:scenes current-scene :status]))
+             (:remaining-ms timer)
+             (zero? (:remaining-ms timer)))
+      ;; @TOOD: clunk text-sprite should have a drop-shadow option
+      (-> state
+          (update-in [:scenes current-scene :sprites]
+                     conj
+                     (sprite/text-sprite :round-clear-title
+                                         (u/window-pos window [0.5 0.9])
+                                         "Round Clear!"
+                                         :font-size 96
+                                         :draw-fn draw-text-sprite-with-drop-shadow))
+          (assoc-in [:scenes current-scene :status] :ending)
+          (delay/add-delay-fn
+           (delay/delay-fn 1500 transition-end)))
+      state)))
+
 (defn update-level-01
   "Called each frame, update the sprites in the current scene"
   [state]
@@ -102,11 +184,10 @@
       sprite/update-state
       tween/update-state
       delay/update-state
-      collision/update-state))
+      collision/update-state
+      check-end))
 
-;; @TODO: not working, could do with a "no collisions fn", otherwise we trigger non-hit for each fly that doesn't collide
 (defn colliders
-  []
   []
   [(collision/collider
     :fly

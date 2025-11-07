@@ -5,7 +5,8 @@
             [spider-game.scenes.level-01 :as level-01]
             [spider-game.scenes.menu :as menu]
             [spider-game.scenes.wrap-overlay :as wrap-overlay]
-            [spider-game.scenes.repair-overlay :as repair-overlay]))
+            [spider-game.scenes.repair-overlay :as repair-overlay]
+            [spider-game.scenes.round-end :as round-end]))
 
 (defn init-scenes
   "Map of scenes in the game"
@@ -14,6 +15,7 @@
    :bite-overlay (bite-overlay/init state)
    :wrap-overlay (wrap-overlay/init state)
    :repair-overlay (repair-overlay/init state)
+   :round-end (round-end/init state)
    :menu (menu/init state)})
 
 ;; Configure the game
@@ -28,7 +30,11 @@
                             :step-3 "resources/audio/step-3.ogg"
                             :step-4 "resources/audio/step-4.ogg"
                             :step-5 "resources/audio/step-5.ogg"
-                            :munch "resources/audio/munch.ogg"}}}))
+                            :munch "resources/audio/munch.ogg"}}
+           ;; @TODO: get real score data
+           :score {:flies-caught 10
+                   :perfect-bites 7
+                   :spider-happiness "high"}}))
 
 (defn -main
   "Run the game"

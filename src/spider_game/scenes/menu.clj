@@ -1,6 +1,6 @@
 (ns spider-game.scenes.menu
   (:require [clunk.core :as c]
-            [clunk.input :as input]
+            [clunk.input :as i]
             [clunk.palette :as p]
             [clunk.scene :as scene]
             [clunk.sprite :as sprite]
@@ -47,7 +47,7 @@
   [(title window)
    (caption window)
    (-> (button/button-sprite (u/window-pos window [0.5 0.7]) "Play")
-       (input/add-on-click on-click-play))])
+       (i/add-on-click on-click-play))])
 
 (defn draw-menu!
   "Called each frame, draws the current scene to the screen"

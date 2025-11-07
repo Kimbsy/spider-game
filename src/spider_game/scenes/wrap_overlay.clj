@@ -154,12 +154,6 @@
       tween/update-state
       check-wrapped))
 
-(defn esc
-  [state e]
-  (if (i/is e :key i/K_ESCAPE)
-    (scene/transition state :level-01 :transition-length 0)
-    state))
-
 (defn click
   [{:keys [current-scene] :as state} {:keys [pos] :as e}]
   (let [sprites (get-in state [:scenes current-scene :sprites])
@@ -178,7 +172,6 @@
    :draw-fn draw-wrap-overlay!
    :update-fn update-wrap-overlay
    :mouse-button-fns [click]
-   ;;   :key-fns [esc]
    :status :wrapping
    :wrap-points []
    ;; gets set by bite-overlay
