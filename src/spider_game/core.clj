@@ -1,12 +1,13 @@
 (ns spider-game.core
   (:gen-class)
-  (:require [clunk.core :as c]
+  (:require [clunk.audio :as audio]
+            [clunk.core :as c]
             [spider-game.scenes.bite-overlay :as bite-overlay]
             [spider-game.scenes.level-01 :as level-01]
             [spider-game.scenes.menu :as menu]
-            [spider-game.scenes.wrap-overlay :as wrap-overlay]
             [spider-game.scenes.repair-overlay :as repair-overlay]
-            [spider-game.scenes.round-end :as round-end]))
+            [spider-game.scenes.round-end :as round-end]
+            [spider-game.scenes.wrap-overlay :as wrap-overlay]))
 
 (defn init-scenes
   "Map of scenes in the game"
@@ -36,12 +37,16 @@
            :init-scenes-fn init-scenes
            :current-scene :menu
            :assets {:image {:fly-spritesheet "resources/img/fly-spritesheet.png"}
-                    :audio {:step-1 "resources/audio/step-1.ogg"
-                            :step-2 "resources/audio/step-2.ogg"
-                            :step-3 "resources/audio/step-3.ogg"
-                            :step-4 "resources/audio/step-4.ogg"
-                            :step-5 "resources/audio/step-5.ogg"
-                            :munch "resources/audio/munch.ogg"}}
+                    :audio {:music "resources/audio/music/catching-flies.ogg"
+                            :step-1 "resources/audio/sfx/step-1.ogg"
+                            :step-2 "resources/audio/sfx/step-2.ogg"
+                            :step-3 "resources/audio/sfx/step-3.ogg"
+                            :step-4 "resources/audio/sfx/step-4.ogg"
+                            :step-5 "resources/audio/sfx/step-5.ogg"
+                            }}
+           :on-start-fn (fn [state]
+                          (assoc state :music-clip
+                                 (audio/play! :music :loop? true)))
            :score initial-score
            :restart-fn restart}))
 
