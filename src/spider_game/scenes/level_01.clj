@@ -92,6 +92,16 @@
                          (= :remove-me (:status s)))
                        sprites))))
 
+(defn draw-text-sprite-with-drop-shadow!
+  [state text-sprite]
+  (sprite/draw-text-sprite! state
+                            (-> text-sprite
+                                ;; @TODO: make [7 7] relative to font size?
+                                (update :pos #(map + [7 7] %))
+                                (assoc :color (assoc p/black 3 0.4))))
+  (sprite/draw-text-sprite! state
+                            text-sprite))
+
 (defn end-transition
   [{:keys [window current-scene scenes] :as state}
    target
@@ -104,7 +114,7 @@
         progress (float (/ i (/ transition-length 2)))
         tweened-progress (tween/ease-out-expo progress)
         current-y (* dy tweened-progress)
-        rc-title(update-in rc-title [:pos 1] + current-y)]
+        rc-title (update-in rc-title [:pos 1] + current-y)]
     (if (< i (/ transition-length 2))
       (do
         (c/draw-game! (assoc state :current-scene current-scene))
@@ -113,7 +123,7 @@
          [0 0]
          (u/window-size window)
          [0 0 0 (float (/ (* 2 i) transition-length))])
-        (sprite/draw-text-sprite! state rc-title)
+        (draw-text-sprite-with-drop-shadow! state rc-title)
         (GLFW/glfwSwapBuffers window))
       (do
         (c/draw-game! (assoc state :current-scene target))
@@ -122,18 +132,8 @@
          [0 0]
          (u/window-size window)
          [0 0 0 (float (/ (* 2 (- transition-length i)) transition-length))])
-        (sprite/draw-text-sprite! state rc-title)
+        (draw-text-sprite-with-drop-shadow! state rc-title)
         (GLFW/glfwSwapBuffers window)))))
-
-(defn draw-text-sprite-with-drop-shadow
-  [state text-sprite]
-  (sprite/draw-text-sprite! state
-                            (-> text-sprite
-                                ;; @TODO: make [7 7] relative to font size?
-                                (update :pos #(map + [7 7] %))
-                                (assoc :color (assoc p/black 3 0.4))))
-  (sprite/draw-text-sprite! state
-                            text-sprite))
 
 (defn transition-end
   [{:keys [current-scene] :as state}]
@@ -168,7 +168,7 @@
                                          (u/window-pos window [0.5 0.9])
                                          "Round Clear!"
                                          :font-size 96
-                                         :draw-fn draw-text-sprite-with-drop-shadow))
+                                         :draw-fn draw-text-sprite-with-drop-shadow!))
           (assoc-in [:scenes current-scene :status] :ending)
           (delay/add-delay-fn
            (delay/delay-fn 1500 transition-end)))
@@ -261,7 +261,8 @@
           target-fly (first (filter #(and (#{:biteable :struggling} (:current-animation %1))
                                           (collision/w-h-rects-collide? %1 spider))
                                     flies))]
-      (if target-fly
+      (if (and target-fly
+               (not= :ending (get-in state [:scenes current-scene :status])))
         (scene/transition
          state
          :bite-overlay

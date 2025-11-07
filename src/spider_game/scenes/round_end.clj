@@ -12,12 +12,14 @@
             [clunk.shape :as shape]))
 
 (defn on-click-menu
-  [state e]
-  (scene/transition state :menu :transition-length 40))
+  [{:keys [restart-fn] :as state} e]
+  (scene/transition state
+                    :menu
+                    :transition-length 40
+                    :init-fn restart-fn))
 
 (defn sprites
   [{:keys [window] :as state}]
-  (prn (u/window-pos window [0.5 0.8]))
   [(sprite/text-sprite :flies-caught
                        (u/window-pos window [-0.5 0.3])
                        "Flies caught:"

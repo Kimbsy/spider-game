@@ -18,6 +18,17 @@
    :round-end (round-end/init state)
    :menu (menu/init state)})
 
+(def initial-score
+  {:flies-caught 0
+   :perfect-bites 0
+   :spider-happiness "N/A"})
+
+(defn restart
+  [state]
+  (-> state
+      (assoc :score initial-score)
+      (assoc :scenes (init-scenes state))))
+
 ;; Configure the game
 (def spider-game-game
   (c/game {:title "spider-game"
@@ -31,9 +42,8 @@
                             :step-4 "resources/audio/step-4.ogg"
                             :step-5 "resources/audio/step-5.ogg"
                             :munch "resources/audio/munch.ogg"}}
-           :score {:flies-caught 0
-                   :perfect-bites 0
-                   :spider-happiness "N/A"}}))
+           :score initial-score
+           :restart-fn restart}))
 
 (defn -main
   "Run the game"

@@ -20,4 +20,4 @@
                       "60.000s"
                       :font-size 96
                       :color color
-                      :extra {:remaining-ms 60000}))
+                      :extra {:remaining-ms 6000}))
