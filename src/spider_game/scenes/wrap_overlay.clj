@@ -71,6 +71,21 @@
         (-> (fly/fly center :hide-timer? true)
             (assoc :rotation (:rotation original-fly))))])))
 
+(defn line-hits-rect?
+  [[a b c d :as _rect-points] line]
+  (or (collision/lines-intersect? line [a b])
+      (collision/lines-intersect? line [b c])
+      (collision/lines-intersect? line [c d])
+      (collision/lines-intersect? line [d a])))
+
+(defn fly-bounding-rect
+  [{:keys [current-scene] :as state}]
+  (let [sprites (get-in state [:scenes current-scene :sprites])
+        {:keys [pos bounds-fn] :as fly} (first (filter (sprite/has-group :fly) sprites))
+        pos-offsets (sprite/pos-offsets fly)
+        rect (map (partial map + pos pos-offsets) (bounds-fn fly))]
+    rect))
+
 (defn draw-wrap-overlay!
   [{:keys [window current-scene] :as state}]
   ;; draw level-01 scene
@@ -80,10 +95,8 @@
   (sprite/draw-scene-sprites! state)
 
   ;; @TODO: make the wrapping look a bit nicer. Could animate the
-  ;; threads as they appear, show the mouse-connected one as a ghost,
-  ;; have a spider leg move the thread? Once completed could tween the
-  ;; points to next-to the fly. Could not allow points inside the fly
-  ;; hitbox?
+  ;; threads as they appear, have a spider leg move the thread? Once
+  ;; completed could tween the points to next-to the fly.
   (let [set-points (get-in state [:scenes current-scene :wrap-points])
         wrapping? (= :wrapping (get-in state [:scenes current-scene :status]))
         m-pos (u/mouse-pos window)
@@ -94,23 +107,18 @@
         lines (partition 2 1 wrap-points)]
     (shape/draw-lines! state lines (if wrapping? common/spider-white p/green) :line-width 3)
 
-    ;; draw red line if we can't place the current choice
+    ;; draw green line if we can place the current choice
     (let [sprites (get-in state [:scenes current-scene :sprites])
           fly (first (filter (sprite/has-group :fly) sprites))]
       (when (and wrapping?
                  (seq lines)
                  ;; @NOTE, bit of a hack to use existing sprite-based collision detection
-                 (collision/pos-in-rect? {:pos m-pos :size [0 0] :offsets [:center]} fly))
+                 (not (collision/pos-in-rect? {:pos m-pos :size [0 0] :offsets [:center]} fly))
+                 (line-hits-rect? (fly-bounding-rect state) (last lines)))
+
         (let [[p1 p2] (last lines)]
           ;; @TODO: clunk should take a [p1 p2] vector here
-          (shape/draw-line! state p1 p2 p/red :line-width 3))))))
-
-(defn line-hits-rect?
-  [[a b c d :as _rect-points] line]
-  (or (collision/lines-intersect? line [a b])
-      (collision/lines-intersect? line [b c])
-      (collision/lines-intersect? line [c d])
-      (collision/lines-intersect? line [d a])))
+          (shape/draw-line! state p1 p2 p/green :line-width 3))))))
 
 (defn wrap-level-01-fly
   [state uuid]
@@ -129,14 +137,6 @@
                              :else
                              s))
                          sprites)))))
-
-(defn fly-bounding-rect
-  [{:keys [current-scene] :as state}]
-  (let [sprites (get-in state [:scenes current-scene :sprites])
-        {:keys [pos bounds-fn] :as fly} (first (filter (sprite/has-group :fly) sprites))
-        pos-offsets (sprite/pos-offsets fly)
-        rect (map (partial map + pos pos-offsets) (bounds-fn fly))]
-    rect))
 
 (defn check-wrapped
   [{:keys [window current-scene] :as state}]
