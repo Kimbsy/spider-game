@@ -1,0 +1,85 @@
+name: Build Jars
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Leiningen
+        run: |
+          curl https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein > lein
+          chmod +x lein
+          ./lein self-install
+          ./lein version
+
+      - name: Build uberjar
+        env:
+          LEIN_SNAPSHOTS_IN_RELEASE: true
+        run: |
+          ./lein clean
+          ./lein uberjar
+
+      - name: Upload standalone uberjar
+        uses: actions/upload-artifact@v4
+        with:
+          name: spider-game.jar
+          path: target/**/*-standalone.jar
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download lein.bat
+        shell: powershell
+        run: |
+          Invoke-WebRequest https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein.bat -OutFile lein.bat
+
+      - name: Bootstrap Leiningen
+        shell: powershell
+        run: |
+          # first download the self-installs
+          ./lein.bat self-install
+          # verify version (forces jar download if self-install wasn’t enough)
+          ./lein.bat version
+
+      - name: Build uberjar
+        shell: powershell
+        env:
+          LEIN_SNAPSHOTS_IN_RELEASE: true
+        run: |
+          ./lein.bat clean
+          ./lein.bat uberjar
+
+      - name: Rename standalone jar for Windows
+        shell: powershell
+        run: |
+          # look in target/uberjar for the standalone jar
+          $jar = Get-ChildItem -Path target/uberjar -Filter "*-standalone.jar" | Select-Object -First 1
+          if ($null -eq $jar) { Write-Error "No standalone jar found"; exit 1 }
+          $newName = "$($jar.BaseName)_windows.jar"
+          Rename-Item -Path $jar.FullName -NewName $newName
+
+      - name: Upload uberjar
+        uses: actions/upload-artifact@v4
+        with:
+          name: spider-game_windows.jar
+          path: target/**/*_windows.jar
