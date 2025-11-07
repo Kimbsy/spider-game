@@ -1,4 +1,4 @@
-(ns spider-game.sprites.round-timer
+(ns spider-game.sprites.timer
   (:require [clunk.sprite :as sprite]
             [clunk.palette :as p]))
 
@@ -13,11 +13,11 @@
            (assoc :remaining-ms new)
            (assoc :content (str (format "%.2f" (float (/ new 1000))) "s")))))))
 
-(defn round-timer
+(defn timer
   [[x y] color]
   (sprite/text-sprite :timer
                       [(+ 48 x) y]
                       "60.000s"
                       :font-size 96
                       :color color
-                      :extra {:remaining-ms 1000 #_ 60000}))
+                      :extra {:remaining-ms 60000}))

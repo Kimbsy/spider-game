@@ -23,7 +23,7 @@
   (c/game {:title "spider-game"
            :size [1000 800]
            :init-scenes-fn init-scenes
-           :current-scene :level-01
+           :current-scene :menu
            :assets {:image {:fly-spritesheet "resources/img/fly-spritesheet.png"}
                     :audio {:step-1 "resources/audio/step-1.ogg"
                             :step-2 "resources/audio/step-2.ogg"
@@ -31,10 +31,9 @@
                             :step-4 "resources/audio/step-4.ogg"
                             :step-5 "resources/audio/step-5.ogg"
                             :munch "resources/audio/munch.ogg"}}
-           ;; @TODO: get real score data
-           :score {:flies-caught 10
-                   :perfect-bites 7
-                   :spider-happiness "high"}}))
+           :score {:flies-caught 0
+                   :perfect-bites 0
+                   :spider-happiness "N/A"}}))
 
 (defn -main
   "Run the game"

@@ -21,19 +21,23 @@
   [(sprite/text-sprite :flies-caught
                        (u/window-pos window [-0.5 0.3])
                        "Flies caught:"
-                       :font-size 48)
+                       :font-size 48
+                       :offsets [:right])
    (sprite/text-sprite :perfect-bites
                        (u/window-pos window [-0.5 0.4])
                        "Perfect bites:"
-                       :font-size 48)
+                       :font-size 48
+                       :offsets [:right])
    (sprite/text-sprite :spider-happiness
                        (u/window-pos window [-0.5 0.5])
                        "Spider happiness:"
-                       :font-size 48)
+                       :font-size 48
+                       :offsets [:right])
    (sprite/text-sprite :total-score
                        (u/window-pos window [-0.5 0.6])
                        "Total score:"
-                       :font-size 48)
+                       :font-size 48
+                       :offsets [:right])
    (-> (button/button-sprite (u/window-pos window [0.5 1.2]) "Menu")
        (i/add-on-click on-click-menu))])
 
@@ -64,7 +68,7 @@
      (tween/add-tween
       s
       (tween/tween :pos
-                   final-x
+                   475
                    :from-value x
                    :step-count 30
                    :easing-fn tween/ease-out-quint
@@ -114,13 +118,22 @@
   (tween-text-in state :total-score 350))
 
 (defn show-total
-  [{:keys [window current-scene score] :as state}]
-  (update-in state [:scenes current-scene :sprites]
-             conj (sprite/text-sprite :total-out
-                                      (u/window-pos window [0.525 0.6])
-                                      (str 9879872322222)
-                                      :font-size 48
-                                      :offsets [:left])))
+  [{:keys [window current-scene]
+    {:keys [flies-caught perfect-bites spider-happiness]} :score
+    :as state}]
+  (let [total (* (+ (* 111 flies-caught)
+                    (* 73 perfect-bites))
+                 (case spider-happiness
+                   "very high" 31
+                   "high" 23
+                   "moderate" 11
+                   "low" 5))]
+    (update-in state [:scenes current-scene :sprites]
+               conj (sprite/text-sprite :total-out
+                                        (u/window-pos window [0.525 0.6])
+                                        (str total)
+                                        :font-size 48
+                                        :offsets [:left]))))
 
 (defn show-menu-button
   [state]

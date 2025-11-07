@@ -18,7 +18,7 @@
             [spider-game.sprites.web-fix :as web-fix]
             [spider-game.scenes.repair-overlay :as repair-overlay]
             [spider-game.sprites.score-box :as score-box]
-            [spider-game.sprites.round-timer :as round-timer])
+            [spider-game.sprites.timer :as timer])
   (:import (org.lwjgl.glfw GLFW)))
 
 (defn flies
@@ -33,8 +33,8 @@
    ;;   (flies 3 window)
    [(ps/spider (u/center window))
     (score-box/score-box)
-    (round-timer/round-timer (u/window-pos window [0.507 0.067]) (assoc p/black 3 0.4))
-    (round-timer/round-timer (u/window-pos window [0.5 0.06]) p/white)]))
+    (timer/timer (u/window-pos window [0.507 0.067]) (assoc p/black 3 0.4))
+    (timer/timer (u/window-pos window [0.5 0.06]) p/white)]))
 
 ;; @TODO: tell clunk which order to draw sprites in
 (defn draw-level-01!
@@ -161,6 +161,7 @@
              (zero? (:remaining-ms timer)))
       ;; @TOOD: clunk text-sprite should have a drop-shadow option
       (-> state
+          (assoc-in [:score :spider-happiness] (web/calculate-spider-happiness state))
           (update-in [:scenes current-scene :sprites]
                      conj
                      (sprite/text-sprite :round-clear-title
@@ -177,7 +178,7 @@
   "Called each frame, update the sprites in the current scene"
   [state]
   (-> state
-      round-timer/update-state
+      timer/update-state
       handle-escapes
       remove-escaped
       remove-flagged
@@ -386,7 +387,9 @@
                       ;; repair-on-click
                       ]
    :key-fns [bite-on-space
-             repair-web-on-r]
+             ;; @NOTE, repairing was a bit boring
+             ;; repair-web-on-r
+             ]
    :spawn-web-break-fns [spawn-web-break]
    :spawn-web-fix-fns [spawn-web-fix]
    :complete-fix-fns [complete-fix]

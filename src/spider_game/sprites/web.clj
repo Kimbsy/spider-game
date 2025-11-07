@@ -159,3 +159,21 @@
                  :broken-vertices #{}
                  :initial-points-in-rings initial-points-in-rings})
         recalculate-web)))
+
+(defn calculate-spider-happiness
+  "based on how complete the web is"
+  [{:keys [window] :as state}]
+  (let [initial-threads (count (thread-set (web window)))
+        current-web (first (filter (sprite/has-group :web) (get-in state [:scenes :level-01 :sprites])))
+        current-threads (count (thread-set current-web))]
+    (cond
+      (= current-threads initial-threads)
+      "very high"
+
+      (< (* 2/3 initial-threads) current-threads)
+      "high"
+
+      (< (* 1/2 initial-threads) current-threads)
+      "moderate"
+
+      :else "low")))

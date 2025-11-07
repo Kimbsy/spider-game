@@ -114,19 +114,21 @@
 
 (defn wrap-level-01-fly
   [state uuid]
-  (update-in state [:scenes :level-01 :sprites]
-             (fn [sprites]
-               (pmap (fn [s]
-                       (cond
-                         (= uuid (:uuid s))
-                         (fly/wrap-fly s)
+  (-> state
+      (update-in [:score :flies-caught] inc)
+      (update-in [:scenes :level-01 :sprites]
+                 (fn [sprites]
+                   (pmap (fn [s]
+                           (cond
+                             (= uuid (:uuid s))
+                             (fly/wrap-fly s)
 
-                         (= :score-box (:sprite-group s))
-                         (score-box/show s)
+                             (= :score-box (:sprite-group s))
+                             (score-box/show s)
 
-                         :else
-                         s))
-                     sprites))))
+                             :else
+                             s))
+                         sprites)))))
 
 (defn fly-bounding-rect
   [{:keys [current-scene] :as state}]

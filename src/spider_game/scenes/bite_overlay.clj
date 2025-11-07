@@ -143,12 +143,13 @@
         (collision/w-h-rects-collide? cb p)
         (-> state
             ((fn [state]
-               (assoc-in state
-                         [:scenes :wrap-overlay]
-                         ;; also insert he fly uuid so we know
-                         ;; which sprite to wrap once we're done
-                         (assoc (wrap-overlay/init state)
-                                :fly-uuid (get-in state [:scenes current-scene :fly-uuid])))))
+               (-> state
+                   (update-in [:score :perfect-bites] inc)
+                   (assoc-in [:scenes :wrap-overlay]
+                             ;; also insert the fly uuid so we know
+                             ;; which sprite to wrap once we're done
+                             (assoc (wrap-overlay/init state)
+                                    :fly-uuid (get-in state [:scenes current-scene :fly-uuid]))))))
             (scene/transition
              :wrap-overlay))
 
@@ -158,7 +159,7 @@
             ((fn [state]
                (assoc-in state
                          [:scenes :wrap-overlay]
-                         ;; also insert he fly uuid so we know
+                         ;; also insert the fly uuid so we know
                          ;; which sprite to wrap once we're done
                          (assoc (wrap-overlay/init state)
                                 :fly-uuid (get-in state [:scenes current-scene :fly-uuid])))))
