@@ -111,17 +111,8 @@ jobs:
           ./lein.bat clean
           ./lein.bat uberjar
 
-      - name: Rename standalone jar for Windows
-        shell: powershell
-        run: |
-          # look in target/uberjar for the standalone jar
-          $jar = Get-ChildItem -Path target/uberjar -Filter "*-standalone.jar" | Select-Object -First 1
-          if ($null -eq $jar) { Write-Error "No standalone jar found"; exit 1 }
-          $newName = "$($jar.BaseName)_windows.jar"
-          Rename-Item -Path $jar.FullName -NewName $newName
-
       - name: Upload uberjar
         uses: actions/upload-artifact@v4
         with:
           name: spider-game_windows
-          path: target/**/*_windows.jar
+          path: target/**/*-standalone.jar
