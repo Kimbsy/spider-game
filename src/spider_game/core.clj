@@ -45,7 +45,10 @@
                             :step-4 "resources/audio/sfx/step-4.ogg"
                             :step-5 "resources/audio/sfx/step-5.ogg"}}
            :on-start-fn (fn [state]
-                          (assoc state :last-frame-time (System/currentTimeMillis)))
+                          (-> state
+                              (assoc :music-source
+                                     (audio/play! :music :loop? true))
+                              (assoc :last-frame-time (System/currentTimeMillis))))
            :score initial-score
            :restart-fn restart}))
 

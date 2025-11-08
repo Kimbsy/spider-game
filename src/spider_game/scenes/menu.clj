@@ -1,14 +1,13 @@
 (ns spider-game.scenes.menu
-  (:require [clunk.audio :as audio]
-            [clunk.core :as c]
+  (:require [clunk.core :as c]
             [clunk.input :as i]
             [clunk.palette :as p]
             [clunk.scene :as scene]
+            [clunk.shape :as shape]
             [clunk.sprite :as sprite]
             [clunk.tween :as tween]
             [clunk.util :as u]
-            [spider-game.sprites.button :as button]
-            [clunk.shape :as shape]))
+            [spider-game.sprites.button :as button]))
 
 (def bg-color (p/hex->rgba "#A6A6B5"))
 
@@ -91,8 +90,6 @@
       (and (= :building (:status title))
            (= 0 (:animation-frame title)))
       (-> state
-          (assoc :music-source
-                 (audio/play! :music :loop? true))
           (sprite/update-sprites
            (sprite/is-sprite title)
            (fn [t]
