@@ -9,10 +9,12 @@
             [spider-game.sprites.fly :as fly]
             [clunk.delay :as delay]
             [clunk.tween :as tween]
-            [clunk.shape :as shape]))
+            [clunk.shape :as shape]
+            [clunk.audio :as audio]))
 
 (defn on-click-menu
-  [{:keys [restart-fn] :as state} e]
+  [{:keys [restart-fn music] :as state} e]
+  (audio/stop! music)
   (scene/transition state
                     :menu
                     :transition-length 40

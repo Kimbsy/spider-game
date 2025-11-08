@@ -36,17 +36,16 @@
            :size [1000 800]
            :init-scenes-fn init-scenes
            :current-scene :menu
-           :assets {:image {:fly-spritesheet "resources/img/fly-spritesheet.png"}
+           :assets {:image {:web-title-spritesheet "resources/img/web-title-spritesheet.png"
+                            :fly-spritesheet "resources/img/fly-spritesheet.png"}
                     :audio {:music "resources/audio/music/catching-flies.ogg"
                             :step-1 "resources/audio/sfx/step-1.ogg"
                             :step-2 "resources/audio/sfx/step-2.ogg"
                             :step-3 "resources/audio/sfx/step-3.ogg"
                             :step-4 "resources/audio/sfx/step-4.ogg"
-                            :step-5 "resources/audio/sfx/step-5.ogg"
-                            }}
+                            :step-5 "resources/audio/sfx/step-5.ogg"}}
            :on-start-fn (fn [state]
-                          (assoc state :music-clip
-                                 (audio/play! :music :loop? true)))
+                          (assoc state :last-frame-time (System/currentTimeMillis)))
            :score initial-score
            :restart-fn restart}))
 

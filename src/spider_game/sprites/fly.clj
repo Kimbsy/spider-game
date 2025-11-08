@@ -111,7 +111,7 @@
        :fly-spritesheet
        [64 288]
        :animations {:struggling {:frames 1
-                               :y-offset 0
+                                 :y-offset 0
                                  :frame-delay 100}
                     :biteable {:frames 1
                                :y-offset 1
