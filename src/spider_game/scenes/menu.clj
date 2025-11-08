@@ -7,9 +7,10 @@
             [clunk.sprite :as sprite]
             [clunk.tween :as tween]
             [clunk.util :as u]
-            [spider-game.sprites.button :as button]))
+            [spider-game.sprites.button :as button]
+            [clunk.shape :as shape]))
 
-(def grey (p/hex->rgba "#A6A6B5"))
+(def bg-color (p/hex->rgba "#A6A6B5"))
 
 (defn on-click-play
   "Transition from this scene to `:level-01` with a ~500ms frame
@@ -40,36 +41,38 @@
    :scale [4 4]
    :extra {:status :not-started}))
 
-(defn caption
+(defn blocker
+  []
+  (sprite/sprite
+   :blocker
+   [0 0]
+   :draw-fn (fn [state b]
+              (shape/fill-rect! state [0 0] [1000 250] bg-color))))
+
+(defn subtitle
   [window]
-  (-> (sprite/text-sprite :title
-                       (u/window-pos window [0.8 0.37])
-                       "(the bugs are a feature)"
-                       :color p/red
-                       :font-size 24
-                       :rotation -25)
-      (tween/add-tween
-       (tween/tween :pos
-                    -10
-                    :step-count 40
-                    :easing-fn tween/ease-in-out-sine
-                    :yoyo? true
-                    :update-fn tween/tween-y-fn
-                    :yoyo-update-fn tween/tween-y-yoyo-fn
-                    :repeat-times ##Inf))))
+  (sprite/text-sprite :subtitle
+                      ;; add 250 in tween
+                      (u/window-pos window [0.5 0])
+                      "development"
+                      :font-size 64
+                      :offsets [:center :top]))
 
 (defn sprites
   "The initial list of sprites for this scene"
   [{:keys [window] :as state}]
-  [(title window)   
-   ;; (caption window)
-   (-> (button/button-sprite (u/window-pos window [0.5 0.7]) "Play")
+  [(subtitle window)
+   (blocker)
+   (title window)
+   (-> (button/button-sprite (mapv + (u/window-pos window [0.5 0.7])
+                                   [0 500])
+                             "Play")
        (i/add-on-click on-click-play))])
 
 (defn draw-menu!
   "Called each frame, draws the current scene to the screen"
   [state]
-  (c/draw-background! grey)
+  (c/draw-background! bg-color)
   (sprite/draw-scene-sprites! state))
 
 (defn check-title
@@ -88,14 +91,35 @@
       (and (= :building (:status title))
            (= 0 (:animation-frame title)))
       (-> state
-          (assoc :music-clip
+          (assoc :music-source
                  (audio/play! :music :loop? true))
           (sprite/update-sprites
            (sprite/is-sprite title)
            (fn [t]
              (-> t
                  (sprite/set-animation :finished)
-                 (assoc :status :finished)))))
+                 (assoc :status :finished))))
+          (sprite/update-sprites
+           (sprite/has-group :subtitle)
+           (fn [b]
+             (tween/add-tween
+              b
+              (tween/tween :pos
+                           250
+                           :update-fn tween/tween-y-fn
+                           :step-count 40
+                           :easing-fn tween/ease-out-expo))))
+          (sprite/update-sprites
+           (sprite/has-group :button)
+           (fn [b]
+             (tween/add-tween
+              b
+              (tween/tween :pos
+                           -500
+                           :update-fn tween/tween-y-fn
+                           :step-count 40
+                           :easing-fn tween/ease-out-expo
+                           :initial-delay 80)))))
 
       :else
       state)))

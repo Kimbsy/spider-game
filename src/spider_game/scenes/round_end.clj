@@ -13,8 +13,8 @@
             [clunk.audio :as audio]))
 
 (defn on-click-menu
-  [{:keys [restart-fn music] :as state} e]
-  (audio/stop! music)
+  [{:keys [restart-fn music-source] :as state} e]
+  (audio/stop! music-source)
   (scene/transition state
                     :menu
                     :transition-length 40
@@ -48,13 +48,6 @@
 (defn draw-round-end!
   [{:keys [window] :as state}]
   (c/draw-background! p/grey)
-
-  ;; alignment center line
-  #_(shape/draw-line! state
-                   (u/window-pos window [0.5 0])
-                   (u/window-pos window [0.5 1])
-                   p/red)
-  
   (sprite/draw-scene-sprites! state))
 
 (defn update-round-end
