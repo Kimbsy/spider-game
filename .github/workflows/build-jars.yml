@@ -62,22 +62,11 @@ jobs:
           ./lein clean
           ./lein uberjar
 
-      - name: Rename standalone jar for macOS
-        run: |
-          jar=$(ls target/uberjar/*-standalone.jar | head -n 1 || true)
-          if [ -z "$jar" ]; then
-            echo "No standalone jar found"; exit 1
-          fi
-          fname=$(basename "$jar")
-          prefix=${fname%-standalone.jar}
-          newname="${prefix}_macos.jar"
-          mv "$jar" "target/uberjar/$newname"
-
       - name: Upload uberjar for macOS
         uses: actions/upload-artifact@v4
         with:
           name: spider-game_macos
-          path: target/uberjar/*_macos.jar
+          path: target/**/*-standalone.jar
 
   build-windows:
     runs-on: windows-latest
