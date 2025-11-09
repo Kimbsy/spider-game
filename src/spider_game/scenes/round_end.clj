@@ -15,10 +15,12 @@
 (defn on-click-menu
   [{:keys [restart-fn music-source] :as state} e]
   (audio/stop! music-source)
-  (scene/transition state
-                    :menu
-                    :transition-length 40
-                    :init-fn restart-fn))
+  (-> state
+      (assoc :music-source
+             (audio/play! :music :loop? true))
+      (scene/transition :menu
+                        :transition-length 0
+                        :init-fn restart-fn)))
 
 (defn sprites
   [{:keys [window] :as state}]
